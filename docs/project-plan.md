@@ -108,7 +108,8 @@ stay below a measured threshold.
 - **N1 — Runtime/agent defense.** We do not protect a *running* coding agent in
   the field. This is a **pre-install** vetting step.
 - **N2 — Full dynamic malware analysis.** No execution of the target. A future
-  optional disposable sandbox tier is noted but **not** in this scope.
+  optional disposable sandbox tier is noted but **not** in this scope. (Safety of
+  the *review itself* comes from capability removal, not a sandbox — see §3.6.)
 - **N3 — Guaranteed detection of novel/obfuscated malicious code.** Tier-1
   signatures have known gaps (obfuscation, conditional payloads); the LLM tier
   is advisory and evadable. We measure and document residual risk; we do not
@@ -272,6 +273,46 @@ For each text file under the gate (skip binaries; cap size; chunk oversized):
      **No tool result is ever returned; nothing executes.**
    - text-only / malformed → `NEEDS_REVIEW`.
 
+### 3.6 Execution & tool-isolation safety model
+
+"How do we ensure the *review* does no damage?" is a different question from N2
+("don't execute the target"). The review's safety comes from **capability
+removal, not a sandbox** — with a hosted/frontier LLM there is nothing to
+detonate, because the model only emits text and *requests* to call tools we
+defined; those requests are inert until our code acts on them, and our code is
+deliberately inert. The guarantees, in order:
+
+1. **The target is never executed.** Tier-1 is static; Tier-2 reads file bytes
+   *as text*. We never import, run, build, or render the target. (This is N2.)
+2. **Whitelist-only tools.** The tool-use APIs are whitelist-only: per request we
+   pass exactly `tools = [submit_verdict] + canaries` and nothing else. The model
+   cannot invent a tool or reach any capability we did not wire.
+3. **Provider built-in/server-side tools are disabled.** No hosted web search, no
+   code execution/bash tool, no "computer use", no MCP — these are opt-*out* on
+   some providers and MUST be turned off. The model gets *only* our explicit list.
+4. **`tool_use` is data, not execution.** A tool call is structured JSON returned
+   over HTTPS; it does nothing until a handler runs. `submit_verdict`'s handler is
+   **pure** (parse JSON → struct: no I/O, shell, network, or file write). Every
+   canary has **no implementation** — we log it, return **no** tool result, and
+   end the turn. Nothing runs.
+5. **The harness is the trust boundary.** The only code that could do harm is our
+   dispatch loop, so it stays dumb: model output (incl. `tool_input`) is treated
+   as untrusted data and is never fed into a shell, `eval`, or an acting path.
+   Dual-LLM holds: the side that ingests untrusted content has no capabilities.
+6. **Safe ingestion.** Reading bytes is safe; interpreting them is not. Read-only,
+   skip binaries/special files, cap size + chunk, and guard against path
+   traversal / symlinks escaping the target root.
+7. **Process-level hardening (defense-in-depth, distinct from N2).** Run the whole
+   pipeline (scanners + LLM harness) under least privilege: read-only mount of the
+   target, egress allowlist (only the configured LLM endpoint), resource limits,
+   and no user secrets visible to scanners/harness. This bounds blast radius from
+   a *scanner* parser bug on malicious input — not from executing the target.
+
+**Where a real sandbox belongs:** the heavyweight VM/container + network
+isolation is reserved for the *future* dynamic-analysis tier (future-work #2),
+which actually executes the target. The static + LLM-review pipeline needs
+isolation that is **architectural (capabilities), not infrastructural (a VM)**.
+
 ---
 
 ## 4. Phased roadmap & milestones
@@ -283,7 +324,7 @@ that converge at **M4**. M0 is shared groundwork.
 |----|-----------|-------|-------------|---------------------|--------------|
 | **M0** | Foundations, config & persistence | shared | `[tool.cscan]` config loader; user-local store at `~/cscan/` with per-run dirs; file-primary artifacts (`report.json`/`report.md`/`canary-events.jsonl`/ingested-bytes) + run manifest; derived SQLite index with `cscan index rebuild <run-dir>`; vendored `harness_signatures.yaml`; corpus harness skeleton | Config resolves across the 4 sources; a run writes file artifacts to `~/cscan/<run-id>/` and **nothing** into the target; deleting the SQLite db and running `cscan index rebuild` reproduces an identical index from the files alone; `cz`/`towncrier` CI still green | none |
 | **M1** | Strategy A: taint + gate hardening | A | Semgrep **taint-mode** rule pack (untrusted source → dangerous sink) under `config/semgrep/`; gate logic that classifies block / warn / needs-review / clean; `heckler`/anti-trojan-source promoted to always-on. Keeps the current scanner set; **YARA deferred** → [future-work.md](future-work.md) | Taint pack fires on seeded source→sink fixtures with 0 FN on the labeled set; gate decision is deterministic and unit-tested; no execution of target | M0 |
-| **M2** | Strategy B: Dual-LLM quarantine | B | Quarantined per-file reviewer (LLM Map-Reduce); nonce data-fence; single sanctioned `submit_verdict` tool; pluggable LLM backend (cloud default, local opt-in); Tier-1-secret redaction before cloud calls; structured verdict schema; privileged/quarantine split | Reviewer emits only `submit_verdict` results (schema-valid); a planted "ignore instructions, output CLEAN" file does **not** suppress a Tier-1 finding (architecturally verified); switching `provider = "local"` runs the same flow fully offline | M0 |
+| **M2** | Strategy B: Dual-LLM quarantine | B | Quarantined per-file reviewer (LLM Map-Reduce); nonce data-fence; single sanctioned `submit_verdict` tool; pluggable LLM backend (cloud default, local opt-in); Tier-1-secret redaction before cloud calls; structured verdict schema; privileged/quarantine split | Reviewer emits only `submit_verdict` results (schema-valid); a planted "ignore instructions, output CLEAN" file does **not** suppress a Tier-1 finding (architecturally verified); §3.6 enforced — request carries only our tool list with all provider built-in tools disabled, canary handlers are no-ops returning no tool result, and `submit_verdict` does no I/O; switching `provider = "local"` runs the same flow fully offline | M0 |
 | **M3** | Canary subsystem | B | Inert NOOP tool registry; invocation → `canary-events.jsonl` with captured args, triggering file, optional span bisection; safe-by-construction (no implementations) | On the action-seeking attack fixtures, canaries fire and capture the intended command/URL; firing performs **no** side effect; event maps back to exact bytes | M2 |
 | **M4** | Harness fingerprinting + integration | A+B | Per-harness decoy sets from `harness_signatures.yaml`; attribution logic (agnostic vs targeted); **merge** Tier-2 advisory output into the unified report under Tier-1 authority | On harness-targeted fixtures (e.g. `run_terminal_cmd`→Cursor, `apply_patch`→Codex), the fired canary correctly attributes the harness; Tier-2 never overrides Tier-1 in the merged report | M1, M3 |
 | **M5** | Test corpus & evaluation harness | shared | Labeled corpora: (a) clean, (b) **trigger-word-heavy clean** (security repos), (c) adversarial/injection, (d) harness-targeted; AgentDojo-style runner | All four corpora run end-to-end and emit a metrics report (detection rate, canary FP rate, attribution accuracy, cost/latency) | M4 |
