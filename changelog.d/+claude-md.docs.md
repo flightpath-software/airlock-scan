@@ -1,0 +1,1 @@
+Add a short `CLAUDE.md` for AI agents working in the repo: layout, dev commands, the Conventional-Commits + towncrier changelog rules, and the automated release workflow (`cscan release`), pointing to `docs/` for deeper detail.
