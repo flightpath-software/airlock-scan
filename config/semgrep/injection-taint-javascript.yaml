@@ -1,0 +1,85 @@
+# cscan custom Semgrep taint rules (JavaScript / TypeScript).
+#
+# Strategy A, Tier 1: deterministic source -> sink dataflow, no execution of the
+# target. Mirrors the Python pack for the npm ecosystem (the other primary
+# supply-chain / skill surface). SARIF "error" level -> HIGH.
+rules:
+  - id: cscan-js-untrusted-input-to-exec
+    mode: taint
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      Untrusted input flows into command execution (possible command injection
+      via child_process).
+    metadata:
+      category: security
+      cwe: "CWE-78: OS Command Injection"
+      cscan: taint
+    pattern-sources:
+      - pattern-either:
+          - pattern: process.env
+          - pattern: process.env.$X
+          - pattern: process.argv
+          - pattern: fs.readFileSync(...)
+          - pattern: fs.readFile(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: child_process.exec(...)
+              - pattern: child_process.execSync(...)
+              - pattern: child_process.spawn(...)
+              - pattern: child_process.spawnSync(...)
+              - pattern: cp.exec(...)
+              - pattern: exec(...)
+              - pattern: execSync(...)
+
+  - id: cscan-js-untrusted-input-to-eval
+    mode: taint
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      Untrusted input flows into dynamic code evaluation (eval / Function
+      constructor).
+    metadata:
+      category: security
+      cwe: "CWE-94: Code Injection"
+      cscan: taint
+    pattern-sources:
+      - pattern-either:
+          - pattern: process.env
+          - pattern: process.env.$X
+          - pattern: process.argv
+          - pattern: fs.readFileSync(...)
+          - pattern: fs.readFile(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: eval(...)
+              - pattern: Function(...)
+              - pattern: new Function(...)
+
+  - id: cscan-js-secret-or-file-exfiltration
+    mode: taint
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      Environment or local file contents flow into an outbound network call
+      (possible exfiltration).
+    metadata:
+      category: security
+      cwe: "CWE-200: Exposure of Sensitive Information"
+      cscan: taint
+    pattern-sources:
+      - pattern-either:
+          - pattern: process.env
+          - pattern: process.env.$X
+          - pattern: fs.readFileSync(...)
+          - pattern: fs.readFile(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: fetch(...)
+              - pattern: axios.post(...)
+              - pattern: axios.get(...)
+              - pattern: http.request(...)
+              - pattern: https.request(...)

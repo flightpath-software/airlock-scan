@@ -1,0 +1,632 @@
+{
+  "schema_version": "1.0",
+  "generated": "2026-06-01",
+  "description": "Tool signatures exposed by common coding-agent harnesses, captured by platform. Intended to drive 'fake harness' canary sets: register a harness's tool names as inert decoys, and if an injected payload causes the quarantined model to invoke one, the fired name fingerprints which harness the attack was tailored for.",
+  "action_classes": {
+    "read": "Reads files/dirs/state without modifying.",
+    "search": "Searches code/files (grep, glob, semantic).",
+    "edit": "Creates, modifies, or deletes files.",
+    "execute": "Runs shell/terminal commands or processes.",
+    "network": "Fetches URLs or searches the web (exfil-relevant).",
+    "delegate": "Spawns or dispatches a sub-agent.",
+    "plan": "Manages a plan/todo or plan-mode interaction.",
+    "mcp": "Invokes Model Context Protocol tools/resources.",
+    "browser": "Drives a browser.",
+    "memory": "Persists info across sessions.",
+    "other": "Misc (diagrams, completion signals, thinking, etc.)."
+  },
+  "notes": [
+    "Foundational CLIs (Claude Code, Codex, Gemini) and third-party harnesses are mixed; see each entry's 'kind'.",
+    "Aider is intentionally omitted as a tool entry: it does not expose JSON/function-call tools. It edits via SEARCH/REPLACE blocks and is driven by slash-commands (/add, /run, /commit, /diff), so it has no canary-style tool-name signature.",
+    "Cursor ships both an IDE agent and a standalone CLI (cursor-agent). The IDE agent tool names are confirmed; cursor-agent exposes a smaller (~10) overlapping set (e.g. Shell, Delete) whose exact names are only partially public \u2014 treat CLI-specific names as lower confidence.",
+    "Warp does not publicly enumerate fixed internal function-call tool names the way the open-source harnesses do; its entry is capability-level and inferred from documented permission categories (Reading files, Creating plans, Executing commands, Calling MCP servers)."
+  ],
+  "harnesses": [
+    {
+      "id": "claude_code",
+      "display_name": "Claude Code",
+      "vendor": "Anthropic",
+      "kind": "cli",
+      "tool_naming": "PascalCase",
+      "confidence": "high",
+      "homepage": "https://code.claude.com",
+      "sources": [
+        "https://code.claude.com/docs/en/tools-reference",
+        "https://x.com/steipete/status/1954593439347032167"
+      ],
+      "runtime_fingerprints": [],
+      "tools": [
+        {
+          "name": "Read",
+          "action_class": "read"
+        },
+        {
+          "name": "Write",
+          "action_class": "edit"
+        },
+        {
+          "name": "Edit",
+          "action_class": "edit"
+        },
+        {
+          "name": "MultiEdit",
+          "action_class": "edit"
+        },
+        {
+          "name": "NotebookEdit",
+          "action_class": "edit"
+        },
+        {
+          "name": "Grep",
+          "action_class": "search"
+        },
+        {
+          "name": "Glob",
+          "action_class": "search"
+        },
+        {
+          "name": "LS",
+          "action_class": "read"
+        },
+        {
+          "name": "Bash",
+          "action_class": "execute"
+        },
+        {
+          "name": "BashOutput",
+          "action_class": "read"
+        },
+        {
+          "name": "KillShell",
+          "action_class": "execute"
+        },
+        {
+          "name": "WebSearch",
+          "action_class": "network"
+        },
+        {
+          "name": "WebFetch",
+          "action_class": "network"
+        },
+        {
+          "name": "TodoWrite",
+          "action_class": "plan"
+        },
+        {
+          "name": "Task",
+          "action_class": "delegate"
+        },
+        {
+          "name": "ExitPlanMode",
+          "action_class": "plan"
+        },
+        {
+          "name": "AskUserQuestion",
+          "action_class": "other"
+        },
+        {
+          "name": "LSP",
+          "action_class": "read"
+        }
+      ],
+      "fingerprint_tools": [
+        "Bash",
+        "BashOutput",
+        "KillShell",
+        "MultiEdit",
+        "ExitPlanMode",
+        "TodoWrite",
+        "Task"
+      ]
+    },
+    {
+      "id": "codex_cli",
+      "display_name": "OpenAI Codex CLI",
+      "vendor": "OpenAI",
+      "kind": "cli",
+      "tool_naming": "snake_case",
+      "confidence": "high",
+      "homepage": "https://developers.openai.com/codex/cli",
+      "sources": [
+        "https://github.com/openai/codex/blob/main/codex-rs/core/prompt_with_apply_patch_instructions.md",
+        "https://developers.openai.com/api/docs/guides/tools-apply-patch",
+        "https://developers.openai.com/cookbook/examples/gpt-5/codex_prompting_guide"
+      ],
+      "runtime_fingerprints": [],
+      "tools": [
+        {
+          "name": "shell",
+          "action_class": "execute",
+          "notes": "PTY variants exec_command / write_stdin under the unified_exec feature."
+        },
+        {
+          "name": "apply_patch",
+          "action_class": "edit",
+          "notes": "Structured add/update/delete diff format."
+        },
+        {
+          "name": "update_plan",
+          "action_class": "plan"
+        },
+        {
+          "name": "multi_tool_use.parallel",
+          "action_class": "other",
+          "notes": "Parallel tool dispatch."
+        }
+      ],
+      "fingerprint_tools": [
+        "apply_patch",
+        "update_plan",
+        "shell"
+      ]
+    },
+    {
+      "id": "gemini_cli",
+      "display_name": "Google Gemini CLI",
+      "vendor": "Google",
+      "kind": "cli",
+      "tool_naming": "snake_case",
+      "confidence": "high",
+      "homepage": "https://github.com/google-gemini/gemini-cli",
+      "sources": [
+        "https://github.com/google-gemini/gemini-cli/blob/HEAD/docs/tools/index.md",
+        "https://google-gemini.github.io/gemini-cli/docs/tools/",
+        "https://geminicli.com/docs/tools/shell/"
+      ],
+      "runtime_fingerprints": [
+        "env:GEMINI_CLI=1 set in subprocesses spawned by run_shell_command"
+      ],
+      "tools": [
+        {
+          "name": "run_shell_command",
+          "action_class": "execute",
+          "display": "Shell"
+        },
+        {
+          "name": "read_file",
+          "action_class": "read",
+          "display": "ReadFile"
+        },
+        {
+          "name": "write_file",
+          "action_class": "edit",
+          "display": "WriteFile"
+        },
+        {
+          "name": "replace",
+          "action_class": "edit",
+          "display": "Edit"
+        },
+        {
+          "name": "glob",
+          "action_class": "search",
+          "display": "FindFiles"
+        },
+        {
+          "name": "search_file_content",
+          "action_class": "search",
+          "display": "SearchText",
+          "notes": "Aliased grep_search in some configs."
+        },
+        {
+          "name": "list_directory",
+          "action_class": "read",
+          "display": "ReadFolder"
+        },
+        {
+          "name": "read_many_files",
+          "action_class": "read",
+          "display": "ReadManyFiles"
+        },
+        {
+          "name": "google_web_search",
+          "action_class": "network",
+          "display": "GoogleSearch"
+        },
+        {
+          "name": "web_fetch",
+          "action_class": "network",
+          "display": "WebFetch"
+        },
+        {
+          "name": "save_memory",
+          "action_class": "memory",
+          "display": "Save Memory"
+        }
+      ],
+      "fingerprint_tools": [
+        "run_shell_command",
+        "search_file_content",
+        "read_many_files",
+        "save_memory",
+        "google_web_search"
+      ]
+    },
+    {
+      "id": "cursor",
+      "display_name": "Cursor (IDE agent)",
+      "vendor": "Anysphere",
+      "kind": "ide",
+      "tool_naming": "snake_case",
+      "confidence": "high",
+      "homepage": "https://cursor.com/docs/agent/tools",
+      "sources": [
+        "https://forum.cursor.com/t/anyone-gettings-this-error-tool-search-replace/103894",
+        "https://deepwiki.com/x1xhlol/system-prompts-and-models-of-ai-tools/4.1-cursor-agent-tools"
+      ],
+      "runtime_fingerprints": [],
+      "tools": [
+        {
+          "name": "codebase_search",
+          "action_class": "search",
+          "notes": "Semantic search."
+        },
+        {
+          "name": "read_file",
+          "action_class": "read"
+        },
+        {
+          "name": "run_terminal_cmd",
+          "action_class": "execute"
+        },
+        {
+          "name": "list_dir",
+          "action_class": "read"
+        },
+        {
+          "name": "grep_search",
+          "action_class": "search"
+        },
+        {
+          "name": "edit_file",
+          "action_class": "edit"
+        },
+        {
+          "name": "search_replace",
+          "action_class": "edit",
+          "notes": "Newer edit tool name."
+        },
+        {
+          "name": "file_search",
+          "action_class": "read",
+          "notes": "Fuzzy filename search."
+        },
+        {
+          "name": "delete_file",
+          "action_class": "edit"
+        },
+        {
+          "name": "reapply",
+          "action_class": "edit"
+        },
+        {
+          "name": "web_search",
+          "action_class": "network"
+        },
+        {
+          "name": "create_diagram",
+          "action_class": "other"
+        },
+        {
+          "name": "edit_notebook",
+          "action_class": "edit"
+        }
+      ],
+      "fingerprint_tools": [
+        "run_terminal_cmd",
+        "codebase_search",
+        "edit_file",
+        "reapply",
+        "create_diagram",
+        "list_dir"
+      ]
+    },
+    {
+      "id": "warp",
+      "display_name": "Warp (Agentic Development Environment)",
+      "vendor": "Warp",
+      "kind": "terminal",
+      "tool_naming": "not-publicly-fixed",
+      "confidence": "medium",
+      "homepage": "https://docs.warp.dev/agent-platform",
+      "sources": [
+        "https://docs.warp.dev/agent-platform/getting-started/agents-in-warp/",
+        "https://www.warp.dev/blog/reimagining-coding-agentic-development-environment"
+      ],
+      "runtime_fingerprints": [],
+      "tools": [
+        {
+          "name": "execute_command",
+          "action_class": "execute",
+          "notes": "Capability-level; Warp surfaces commands as approvable blocks."
+        },
+        {
+          "name": "read_file",
+          "action_class": "read"
+        },
+        {
+          "name": "edit_file",
+          "action_class": "edit"
+        },
+        {
+          "name": "create_file",
+          "action_class": "edit"
+        },
+        {
+          "name": "grep",
+          "action_class": "search"
+        },
+        {
+          "name": "glob",
+          "action_class": "search"
+        },
+        {
+          "name": "codebase_search",
+          "action_class": "search",
+          "notes": "Codebase embeddings."
+        },
+        {
+          "name": "create_plan",
+          "action_class": "plan"
+        },
+        {
+          "name": "call_mcp",
+          "action_class": "mcp"
+        }
+      ],
+      "fingerprint_tools": []
+    },
+    {
+      "id": "opencode",
+      "display_name": "OpenCode",
+      "vendor": "SST (sst/opencode)",
+      "kind": "cli",
+      "tool_naming": "lowercase",
+      "confidence": "high",
+      "homepage": "https://opencode.ai/docs",
+      "sources": [
+        "https://deepwiki.com/sst/opencode/5.3-built-in-tools-reference",
+        "https://opencode.ai/docs/agents/",
+        "https://computingforgeeks.com/opencode-cli-cheat-sheet/"
+      ],
+      "runtime_fingerprints": [],
+      "tools": [
+        {
+          "name": "bash",
+          "action_class": "execute"
+        },
+        {
+          "name": "read",
+          "action_class": "read"
+        },
+        {
+          "name": "write",
+          "action_class": "edit"
+        },
+        {
+          "name": "edit",
+          "action_class": "edit"
+        },
+        {
+          "name": "list",
+          "action_class": "read"
+        },
+        {
+          "name": "glob",
+          "action_class": "search"
+        },
+        {
+          "name": "grep",
+          "action_class": "search"
+        },
+        {
+          "name": "webfetch",
+          "action_class": "network"
+        },
+        {
+          "name": "websearch",
+          "action_class": "network"
+        },
+        {
+          "name": "task",
+          "action_class": "delegate"
+        },
+        {
+          "name": "todowrite",
+          "action_class": "plan"
+        },
+        {
+          "name": "todoread",
+          "action_class": "read"
+        },
+        {
+          "name": "lsp",
+          "action_class": "read"
+        },
+        {
+          "name": "skill",
+          "action_class": "other"
+        }
+      ],
+      "fingerprint_tools": [
+        "webfetch",
+        "websearch",
+        "task",
+        "todowrite",
+        "todoread",
+        "lsp",
+        "skill"
+      ]
+    },
+    {
+      "id": "zed",
+      "display_name": "Zed (Agent Panel)",
+      "vendor": "Zed Industries",
+      "kind": "ide",
+      "tool_naming": "snake_case",
+      "confidence": "high",
+      "homepage": "https://zed.dev/docs/ai/tools",
+      "sources": [
+        "https://zed.dev/docs/ai/tools",
+        "https://zed.dev/docs/ai/tool-permissions"
+      ],
+      "runtime_fingerprints": [],
+      "tools": [
+        {
+          "name": "read_file",
+          "action_class": "read"
+        },
+        {
+          "name": "edit_file",
+          "action_class": "edit"
+        },
+        {
+          "name": "create_file",
+          "action_class": "edit"
+        },
+        {
+          "name": "list_directory",
+          "action_class": "read"
+        },
+        {
+          "name": "grep",
+          "action_class": "search"
+        },
+        {
+          "name": "find_path",
+          "action_class": "search",
+          "notes": "Glob match -> file paths."
+        },
+        {
+          "name": "copy_path",
+          "action_class": "edit"
+        },
+        {
+          "name": "move_path",
+          "action_class": "edit"
+        },
+        {
+          "name": "delete_path",
+          "action_class": "edit"
+        },
+        {
+          "name": "terminal",
+          "action_class": "execute"
+        },
+        {
+          "name": "fetch",
+          "action_class": "network",
+          "notes": "URL -> Markdown."
+        },
+        {
+          "name": "web_search",
+          "action_class": "network"
+        },
+        {
+          "name": "diagnostics",
+          "action_class": "read"
+        },
+        {
+          "name": "thinking",
+          "action_class": "other"
+        }
+      ],
+      "fingerprint_tools": [
+        "find_path",
+        "delete_path",
+        "move_path",
+        "copy_path",
+        "diagnostics",
+        "terminal",
+        "fetch"
+      ]
+    },
+    {
+      "id": "cline",
+      "display_name": "Cline",
+      "vendor": "Cline (cline/cline)",
+      "kind": "extension",
+      "tool_naming": "snake_case (XML-style)",
+      "confidence": "high",
+      "homepage": "https://docs.cline.bot",
+      "sources": [
+        "https://docs.cline.bot/exploring-clines-tools/cline-tools-guide",
+        "https://github.com/cline/cline"
+      ],
+      "runtime_fingerprints": [
+        "Terminal commands carry a requires_approval flag in the tool call."
+      ],
+      "tools": [
+        {
+          "name": "read_file",
+          "action_class": "read"
+        },
+        {
+          "name": "write_to_file",
+          "action_class": "edit"
+        },
+        {
+          "name": "replace_in_file",
+          "action_class": "edit"
+        },
+        {
+          "name": "search_files",
+          "action_class": "search"
+        },
+        {
+          "name": "list_files",
+          "action_class": "read"
+        },
+        {
+          "name": "list_code_definition_names",
+          "action_class": "read"
+        },
+        {
+          "name": "execute_command",
+          "action_class": "execute"
+        },
+        {
+          "name": "browser_action",
+          "action_class": "browser"
+        },
+        {
+          "name": "use_mcp_tool",
+          "action_class": "mcp"
+        },
+        {
+          "name": "access_mcp_resource",
+          "action_class": "mcp"
+        },
+        {
+          "name": "ask_followup_question",
+          "action_class": "other"
+        },
+        {
+          "name": "attempt_completion",
+          "action_class": "other"
+        },
+        {
+          "name": "plan_mode_respond",
+          "action_class": "plan"
+        },
+        {
+          "name": "new_task",
+          "action_class": "delegate"
+        },
+        {
+          "name": "load_mcp_documentation",
+          "action_class": "mcp"
+        }
+      ],
+      "fingerprint_tools": [
+        "write_to_file",
+        "replace_in_file",
+        "execute_command",
+        "browser_action",
+        "attempt_completion",
+        "ask_followup_question",
+        "list_code_definition_names"
+      ]
+    }
+  ]
+}

@@ -21,11 +21,13 @@ case "$cmd" in
   run)
     target="${1:?run requires <target>}"; out="${2:?run requires <out_dir>}"
     out_file="${out}/semgrep.sarif"
-    # Local custom rules dir (optional) takes precedence if it contains rules.
+    # Always run cscan's bundled taint pack; add the auto registry on top when
+    # reachable. The custom rules are the deterministic, self-contained core and
+    # must never be dropped just because a local dir exists.
     local_rules="${CSCAN_CONFIG_DIR}/semgrep"
     config_arg=(--config auto)
     if compgen -G "${local_rules}/*.y*ml" >/dev/null 2>&1; then
-      config_arg=(--config "$local_rules")
+      config_arg+=(--config "$local_rules")
     fi
     # semgrep exits non-zero when findings exist; the gate is applied later.
     uvx semgrep scan "${config_arg[@]}" --sarif --output "$out_file" \
