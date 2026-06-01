@@ -30,6 +30,25 @@ def _reviewer(responder, store=None):
     return QuarantineReviewer(FakeBackend(responder), CANARIES, store=store)
 
 
+def test_all_emitted_tool_names_are_api_valid():
+    # Regression: harness names like "multi_tool_use.parallel" must be sanitized
+    # to match the OpenAI function-name pattern, or the API rejects the request.
+    import re
+
+    from code_scanner.canary import build_canary_set
+
+    pattern = re.compile(r"^[a-zA-Z0-9_-]+$")
+    every_harness = build_canary_set(
+        ("claude_code", "codex_cli", "gemini_cli", "cursor", "warp", "opencode", "zed", "cline"),
+        include_agnostic=True,
+    )
+    reviewer = QuarantineReviewer(FakeBackend(), every_harness)
+    names = [t["function"]["name"] for t in reviewer.tools]
+    bad = [n for n in names if not pattern.match(n)]
+    assert not bad, f"invalid tool names emitted: {bad}"
+    assert "multi_tool_use_parallel" in names  # the dotted Codex name, sanitized
+
+
 def test_spotlight_fences_content():
     out = spotlight("payload", "abc123")
     assert "<<UNTRUSTED nonce=abc123>>" in out and "<<END abc123>>" in out

@@ -13,6 +13,7 @@ def test_defaults():
     assert cfg.write_into_target is False
     assert cfg.llm.provider == "openai"
     assert cfg.llm.effective_base_url == "https://api.openai.com/v1"
+    assert cfg.llm.max_files == 5  # conservative cost/safety cap by default
     assert cfg.persistence.ingested_bytes_ttl_days == 30
     assert "claude_code" in cfg.canary.harness_sets
 

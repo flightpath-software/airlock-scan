@@ -78,6 +78,56 @@ stay below a measured threshold.
 
 ---
 
+## 1a. Implementation status (checklist)
+
+Live state as of 2026-06-01. ✅ done · 🟡 partial · ⬜ not started. See the
+milestone table in §4 for acceptance criteria.
+
+**M0 — Foundations, config & persistence** ✅
+- [x] `[tool.cscan]` config loader with 4-source precedence (`config.py`)
+- [x] User-local run store under `~/cscan/<run-id>/`, file-primary artifacts (`store.py`)
+- [x] Derived SQLite index, byte-identical rebuild via `cscan-helper index rebuild` (`database.py`)
+- [x] Vendored harness dataset (YAML source + packaged JSON, sync-tested)
+- [x] CLI: `index rebuild`, `canary list`, `canary attribute`
+
+**M1 — Strategy A: taint + gate hardening** ✅
+- [x] Semgrep taint pack (Python + JS/TS) under `config/semgrep/`
+- [x] `scanners/semgrep.sh` runs the bundled pack alongside `--config auto`
+- [x] Gate logic BLOCK/NEEDS_REVIEW/WARN/CLEAN, Tier-1 authoritative (`gate.py`)
+- [ ] Live Semgrep run validation on labeled source→sink fixtures (needs semgrep installed)
+
+**M2 — Strategy B: Dual-LLM quarantine** ✅
+- [x] Per-file map-reduce reviewer, nonce-fence spotlighting (`quarantine.py`)
+- [x] Single sanctioned `submit_verdict` tool + inert canaries; API-safe name sanitization
+- [x] OpenAI-compatible backend (stdlib HTTP) + offline `FakeBackend` (`llm_backend.py`)
+- [x] Tier-1 secret redaction before send
+- [x] CLI: `quarantine <dir>` (with `--fake`), default file-cap alert
+- [🟡] Live model validation against a real endpoint (in progress; needs API key)
+
+**M3 — Canary subsystem** 🟡
+- [x] Inert decoy registry (harness + agnostic sets) (`canary.py`)
+- [x] Canary events recorded with captured args + content hash + traceback to ingested bytes
+- [ ] `--localize` bisection to narrow the triggering span
+
+**M4 — Harness fingerprinting + integration** 🟡
+- [x] Per-harness attribution of a fired decoy (`attribute`)
+- [ ] Single command running Tier-1 scanners **and** Tier-2, merged into one gated report
+
+**M5 — Test corpus & evaluation harness** ⬜
+- [ ] Labeled corpora: clean / trigger-word-heavy clean / adversarial / harness-targeted
+- [ ] AgentDojo-style runner emitting detection rate, canary FP rate, attribution accuracy, cost
+
+**M6 — Operational workflow & docs** 🟡
+- [x] `docs/canary-tripwires.md` (design + safety model)
+- [ ] `report.md` human-readable rendering + triage UX
+- [ ] `cscan export` (shareable run bundle)
+
+**M7 — Hardening & release** ⬜
+- [ ] Threat-model review, cost guardrails, perf pass
+- [ ] Cut `1.0.0` (drop `major_version_zero`) — see §8.1
+
+---
+
 ## 2. Goals & non-goals
 
 ### 2.1 Goals (what "done" means)
@@ -234,7 +284,8 @@ api_key_env = "OPENAI_API_KEY"  # env var that holds the key (never written to d
 local_base_url = "http://localhost:11434/v1"  # used when provider = "local" (Ollama)
 local_model = "qwen2.5-coder"
 redact_tier1_secrets = true     # strip gitleaks-detected secrets before any cloud call
-max_files = 400                 # cost/latency guard
+max_files = 5                   # conservative cost/safety cap; the CLI alerts when it
+                                # applies and CSCAN_LLM_MAX_FILES raises it
 gate_only_on_suspicious = true  # only invoke LLM on Tier-1 clean-but-unclear
 
 [tool.cscan.canary]

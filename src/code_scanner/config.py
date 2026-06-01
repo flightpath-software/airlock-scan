@@ -65,7 +65,7 @@ class LLMConfig:
     temperature: float = 0.0
     request_timeout: int = 60
     max_file_bytes: int = 200_000  # skip/chunk files larger than this
-    max_files: int = 400
+    max_files: int = 5  # safety/cost cap; raise with CSCAN_LLM_MAX_FILES
     gate_only_on_suspicious: bool = True
 
     @property

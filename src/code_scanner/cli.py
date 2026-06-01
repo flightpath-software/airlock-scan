@@ -189,6 +189,15 @@ def _cmd_quarantine(args: argparse.Namespace) -> int:
             return 2
         backend = from_config(cfg.llm, api_key=api_key)
 
+    # Cost/safety guard: when the user hasn't explicitly chosen a cap, limit the
+    # number of files reviewed and tell them so (each file is a separate LLM call).
+    if "CSCAN_LLM_MAX_FILES" not in os.environ:
+        print(
+            f"note: reviewing at most {cfg.llm.max_files} file(s) this run "
+            f"(default cap). Set CSCAN_LLM_MAX_FILES to review more.",
+            file=sys.stderr,
+        )
+
     canaries = build_canary_set(cfg.canary.harness_sets, include_agnostic=cfg.canary.agnostic_set)
     store = RunStore.create(
         cfg.store_root,
