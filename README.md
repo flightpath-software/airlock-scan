@@ -100,9 +100,43 @@ Dependencies are always managed with `uv add` / `uv add --dev` so `pyproject.tom
 
 ## Contributing: commits, changelog & releases
 
-- **Commits** follow [Conventional Commits](https://www.conventionalcommits.org).
-  Enable the template with `git config commit.template .gitmessage.txt`, or use
-  `uv run cz commit`. Using the **Tower** Git client? See [docs/commits.md](docs/commits.md).
+### Sample Flow
+
+**Step 1**: One-time setup: turn on the commit template
+This makes git (and Tower) pre-fill the Conventional Commits guidance whenever you commit.
+```bash
+git config commit.template .gitmessage.txt
+```
+
+**Step 2**: See what you're about to commit
+```bash
+git status
+```
+Files shown in red are untracked (brand new) or modified but not yet staged. To see a summary of changes to already-tracked files:
+
+**Step 3**: Stage the changes
+"Staging" selects what goes into the next commit. To stage everything (new, modified, deleted):
+```bash
+git add -A
+```
+
+**Step 4** — Write the commit (pick ONE method)
+Method A — Guided, with commitizen (recommended!)
+```bash
+uv run cz commit
+```
+It asks a series of questions. Example answers for a feature commit.
+•  type: feat
+•  scope: (leave blank, press Enter)
+•  summary: scaffold shell-first cscan toolkit
+•  longer description (body): (optional) uv-native package + gum scripts orchestrating gitleaks/semgrep/osv-scanner/guarddog/heckler, 3-day cooldown, towncrier+commitizen changelog, CI guards
+•  breaking change? no
+•  issues / footer: (leave blank)
+
+### The Docs Have More Use Cases (Tower, etc.)
+See [docs/commits.md](docs/commits.md).
+
+### Nutshell
 - **Every change adds a news fragment** under [`changelog.d/`](changelog.d/) via
   `cscan changelog`; the human-readable `CHANGELOG.md` is compiled by towncrier.
   See [docs/changelog.md](docs/changelog.md).
