@@ -45,14 +45,39 @@ class PersistenceConfig:
 
 @dataclass(frozen=True, slots=True)
 class LLMConfig:
-    """Tier-2 reviewer backend. Cloud default for reliable tool-calling."""
+    """Tier-2 reviewer backend.
 
-    provider: str = "anthropic"  # "anthropic" | "openai" | "local"
-    model: str = "claude-sonnet"
+    We speak the **OpenAI-compatible** Chat Completions API, so a single client
+    reaches OpenAI, DeepInfra, OpenRouter, Together, Groq, Fireworks, and local
+    servers (Ollama ``/v1``, vLLM, llama.cpp) — the only difference is
+    ``base_url`` + ``model`` + which env var holds the key. Cloud is the default
+    because canary tripwires need reliable tool-calling.
+    """
+
+    provider: str = "openai"  # label only; base_url drives the actual endpoint
+    base_url: str = "https://api.openai.com/v1"
+    model: str = "gpt-4o-mini"
+    api_key_env: str = "OPENAI_API_KEY"  # name of the env var holding the API key
+    # Used by the "local" preset (an OpenAI-compatible local server, e.g. Ollama).
+    local_base_url: str = "http://localhost:11434/v1"
     local_model: str = "qwen2.5-coder"
     redact_tier1_secrets: bool = True
+    temperature: float = 0.0
+    request_timeout: int = 60
+    max_file_bytes: int = 200_000  # skip/chunk files larger than this
     max_files: int = 400
     gate_only_on_suspicious: bool = True
+
+    @property
+    def effective_base_url(self) -> str:
+        """The endpoint to use, applying the ``local`` preset when selected."""
+        if self.provider == "local":
+            return self.local_base_url
+        return self.base_url
+
+    @property
+    def effective_model(self) -> str:
+        return self.local_model if self.provider == "local" else self.model
 
 
 @dataclass(frozen=True, slots=True)
@@ -142,7 +167,9 @@ _ENV_MAP: dict[str, tuple[str | None, str, type]] = {
     "CSCAN_STORE_ROOT": (None, "store_root", Path),
     "CSCAN_WRITE_INTO_TARGET": (None, "write_into_target", bool),
     "CSCAN_LLM_PROVIDER": ("llm", "provider", str),
+    "CSCAN_LLM_BASE_URL": ("llm", "base_url", str),
     "CSCAN_LLM_MODEL": ("llm", "model", str),
+    "CSCAN_LLM_API_KEY_ENV": ("llm", "api_key_env", str),
     "CSCAN_LLM_LOCAL_MODEL": ("llm", "local_model", str),
     "CSCAN_LLM_MAX_FILES": ("llm", "max_files", int),
 }

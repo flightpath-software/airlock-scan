@@ -11,7 +11,8 @@ def test_defaults():
     cfg = Config()
     assert cfg.store_root == Path("~/cscan").expanduser()
     assert cfg.write_into_target is False
-    assert cfg.llm.provider == "anthropic"
+    assert cfg.llm.provider == "openai"
+    assert cfg.llm.effective_base_url == "https://api.openai.com/v1"
     assert cfg.persistence.ingested_bytes_ttl_days == 30
     assert "claude_code" in cfg.canary.harness_sets
 
@@ -66,6 +67,15 @@ def test_user_config_under_store_root(tmp_path):
     cfg = load_config(pyproject=tmp_path / "nope.toml", environ=environ)
     assert cfg.store_root == store_root
     assert cfg.llm.model == "from-user-config"
+
+
+def test_local_preset_switches_endpoint(tmp_path):
+    cfg = load_config(
+        pyproject=tmp_path / "nope.toml",
+        environ={"CSCAN_LLM_PROVIDER": "local"},
+    )
+    assert cfg.llm.effective_base_url == cfg.llm.local_base_url
+    assert cfg.llm.effective_model == cfg.llm.local_model
 
 
 def test_unknown_keys_ignored(tmp_path):

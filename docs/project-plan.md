@@ -45,12 +45,14 @@ untrusted content is itself the attack surface.* We resolve it with three moves:
 
 **LLM runtime, self-containment & privacy (decided up front):**
 
-- **LLM runtime is pluggable, cloud-capable by default.** The canary tripwire
-  and `submit_verdict` signals depend on *reliable function/tool calling*, which
-  frontier cloud models (Anthropic/OpenAI) do far better than small local
-  models. So the **default Tier-2 backend is a cloud model**; a local backend
-  (Ollama / llama.cpp) remains a first-class, opt-in choice for fully-offline or
-  sensitive targets. **The privacy tradeoff is explicit and mitigated:** when
+- **LLM runtime is pluggable via one OpenAI-compatible client.** We speak the
+  OpenAI Chat Completions API, so a single backend reaches OpenAI, DeepInfra,
+  OpenRouter, Together, Groq, and **local** servers (Ollama `/v1`, vLLM,
+  llama.cpp) — only `base_url`/`model`/key differ. The canary tripwire and
+  `submit_verdict` signals depend on *reliable function/tool calling*, so the
+  **default is a cloud model** (default `provider = "openai"`); `provider =
+  "local"` flips `base_url` to a local OpenAI-compatible server for
+  fully-offline or sensitive targets. **The privacy tradeoff is explicit and mitigated:** when
   the cloud backend is used, untrusted file content is sent to a third party.
   We mitigate by running Tier-1 first (block-mode short-circuits before any
   token is spent), redacting Tier-1-detected secrets before sending, and making
@@ -220,10 +222,17 @@ files_are_source_of_truth = true  # human-readable files are portable + canonica
 sqlite_index = true               # derived, queryable; rebuildable from files
 ingested_bytes_ttl_days = 30      # untrusted content at rest; pruned after TTL
 
+# We speak the OpenAI-compatible Chat Completions API, so one client reaches
+# OpenAI, DeepInfra, OpenRouter, Together, Groq, and local servers (Ollama /v1,
+# vLLM, llama.cpp) — only base_url/model/key differ. Cloud default for reliable
+# tool-calling; provider = "local" flips base_url to a local OpenAI-compat server.
 [tool.cscan.llm]
-provider = "anthropic"          # DEFAULT cloud (reliable tool-calling): "anthropic" | "openai" | "local"
-model = "claude-sonnet"         # cloud model id; canaries need solid function-calling
-local_model = "qwen2.5-coder"   # used when provider = "local" (ollama/llama.cpp; offline)
+provider = "openai"             # label; base_url drives the endpoint. "openai" | "local"
+base_url = "https://api.openai.com/v1"
+model = "gpt-4o-mini"           # needs solid function-calling for the canary signal
+api_key_env = "OPENAI_API_KEY"  # env var that holds the key (never written to disk)
+local_base_url = "http://localhost:11434/v1"  # used when provider = "local" (Ollama)
+local_model = "qwen2.5-coder"
 redact_tier1_secrets = true     # strip gitleaks-detected secrets before any cloud call
 max_files = 400                 # cost/latency guard
 gate_only_on_suspicious = true  # only invoke LLM on Tier-1 clean-but-unclear

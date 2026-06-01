@@ -86,6 +86,24 @@ def _build_parser() -> argparse.ArgumentParser:
     canary_attr.add_argument("tool_name", help="The fired canary tool name.")
     canary_attr.add_argument("--json", action="store_true", help="Emit JSON.")
 
+    # quarantine — Tier-2 per-file LLM review into a user-local run store.
+    quarantine = sub.add_parser(
+        "quarantine",
+        help="Run the Tier-2 quarantined reviewer over a target directory.",
+    )
+    quarantine.add_argument("target", type=Path, help="Directory to review.")
+    quarantine.add_argument(
+        "--fake",
+        action="store_true",
+        help="Use the offline FakeBackend (no API key, no network) for a dry run.",
+    )
+    quarantine.add_argument(
+        "--gate",
+        choices=_GATE_CHOICES,
+        default="high",
+        help="Severity gate for the run verdict. Default: high.",
+    )
+
     return parser
 
 
@@ -141,6 +159,67 @@ def _cmd_canary(args: argparse.Namespace) -> int:
     return 2
 
 
+def _cmd_quarantine(args: argparse.Namespace) -> int:
+    import os
+
+    from code_scanner.canary import build_canary_set
+    from code_scanner.config import load_config
+    from code_scanner.gate import decide
+    from code_scanner.llm_backend import FakeBackend, from_config
+    from code_scanner.database import build_index
+    from code_scanner.quarantine import QuarantineReviewer, review_tree
+    from code_scanner.store import RunStore
+
+    cfg = load_config()
+    target = args.target.expanduser().resolve()
+    if not target.is_dir():
+        print(f"cscan-helper: error: not a directory: {target}", file=sys.stderr)
+        return 2
+
+    if args.fake:
+        backend = FakeBackend()
+    else:
+        api_key = os.environ.get(cfg.llm.api_key_env)
+        if not api_key and cfg.llm.provider != "local":
+            print(
+                f"cscan-helper: error: no API key in ${cfg.llm.api_key_env}. "
+                f"Set it, choose provider=local, or use --fake.",
+                file=sys.stderr,
+            )
+            return 2
+        backend = from_config(cfg.llm, api_key=api_key)
+
+    canaries = build_canary_set(cfg.canary.harness_sets, include_agnostic=cfg.canary.agnostic_set)
+    store = RunStore.create(
+        cfg.store_root,
+        target=str(target),
+        gate=args.gate,
+        backend=cfg.llm.provider,
+        model=cfg.llm.effective_model,
+        cscan_version=__version__,
+    )
+    reviewer = QuarantineReviewer(
+        backend, canaries, store=store, max_file_bytes=cfg.llm.max_file_bytes
+    )
+    outcomes = review_tree(reviewer, target, max_files=cfg.llm.max_files)
+
+    verdicts = [o.verdict.as_dict() for o in outcomes]
+    store.write_report(file_verdicts=verdicts)
+    build_index(store, store.index_db_path)
+
+    decision = decide(
+        [],
+        gate=Severity.parse(args.gate),
+        canary_events=store.iter_canary_events(),
+        file_verdicts=verdicts,
+    )
+    print(f"reviewed {len(outcomes)} file(s) → {store.run_dir}")
+    print(decision.summary_line())
+    for reason in decision.reasons:
+        print(f"  - {reason}")
+    return 0 if decision.installable else 1
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
@@ -151,6 +230,8 @@ def main(argv: list[str] | None = None) -> int:
             return _cmd_index(args)
         if args.command == "canary":
             return _cmd_canary(args)
+        if args.command == "quarantine":
+            return _cmd_quarantine(args)
     except Exception as exc:  # noqa: BLE001 - surface a clean error, never a traceback
         print(f"cscan-helper: error: {exc}", file=sys.stderr)
         return 3
