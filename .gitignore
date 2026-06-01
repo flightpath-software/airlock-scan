@@ -24,8 +24,10 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+# Anchored to repo root: these are Python build/venv dirs. Without the leading
+# slash, "lib/" also matched scripts/lib/ and silently excluded the shell libs.
+/lib/
+/lib64/
 parts/
 sdist/
 var/
