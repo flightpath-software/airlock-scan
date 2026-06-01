@@ -1,0 +1,57 @@
+[project]
+name = "code-scanner"
+version = "0.1.0"
+description = "Shell-first, uv-native toolkit to scan repositories for supply-chain and injection attacks before install or before granting LLM access."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "TODO" } # distribution deferred; choose a license before publishing
+authors = [{ name = "Sean Howard" }]
+keywords = [
+    "security",
+    "supply-chain",
+    "sast",
+    "secrets-scanning",
+    "trojan-source",
+    "prompt-injection",
+]
+dependencies = [
+    "rich>=15.0.0",
+]
+# NOTE: runtime dependencies are managed with `uv add` (never hand-edited),
+# so pyproject.toml and uv.lock stay in sync.
+
+[project.scripts]
+# Thin Python helper invoked by the shell layer (e.g. `uv run cscan-helper ...`).
+# The primary user-facing command is the gum launcher at `bin/cscan`.
+cscan-helper = "code_scanner.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.11.8,<0.12"]
+build-backend = "uv_build"
+
+[tool.uv]
+# --- Supply-chain cooldown -------------------------------------------------
+# Refuse to resolve any distribution younger than 3 days, to avoid pulling
+# freshly published (and not-yet-detected) malicious releases.
+#
+# Relative durations require uv >= 0.9.17. uv >= 0.11.8 writes a sentinel
+# timestamp into uv.lock for relative spans, so the rolling window does not
+# churn the lockfile or cause merge conflicts.
+required-version = ">=0.11.8"
+exclude-newer = "3 days"
+#
+# Emergency escape hatch: exempt a single package from the cooldown to take an
+# urgent security fix immediately. Accepts `false` (no cutoff) or a specific
+# RFC 3339 timestamp. Example:
+#   exclude-newer-package = { somepkg = false }
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["src", "tests"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+    "ruff>=0.15.15",
+]

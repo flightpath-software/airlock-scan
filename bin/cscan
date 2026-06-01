@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# cscan — gum-driven launcher for the repo security scanner.
+#
+#   cscan                      open the interactive menu
+#   cscan scan [<target>] [..] scan a repo/dir (optionally listing scanner ids)
+#   cscan install [--yes]      detect / install scanners
+#   cscan setup                configure your shell (PATH + cooldown env)
+#   cscan doctor               environment + OSV supply-chain audit
+#   cscan report <dir> [..]    run the Python helper directly on a results dir
+#   cscan -h | --help          show this help
+set -uo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=/dev/null
+source "${ROOT}/scripts/lib/common.sh"
+# shellcheck source=/dev/null
+source "${ROOT}/scripts/lib/config.sh"
+
+usage() { sed -n '2,12p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; }
+
+cmd="${1:-menu}"
+[ "$#" -gt 0 ] && shift || true
+
+case "$cmd" in
+  menu)               exec bash "${ROOT}/scripts/menu.sh" ;;
+  scan)               exec bash "${ROOT}/scripts/scan.sh" "$@" ;;
+  install|install-tools) exec bash "${ROOT}/scripts/install-tools.sh" "$@" ;;
+  setup|shell-setup)  exec bash "${ROOT}/scripts/shell-setup.sh" "$@" ;;
+  doctor)             exec bash "${ROOT}/scripts/doctor.sh" "$@" ;;
+  report)             ( cd "$ROOT" && exec uv run cscan-helper report "$@" ) ;;
+  -h|--help|help)     usage ;;
+  *)                  log_err "unknown command: ${cmd}"; echo; usage; exit 2 ;;
+esac
