@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 from code_scanner.canary import build_canary_set
 from code_scanner.llm_backend import BackendResponse, FakeBackend, ToolCall
 from code_scanner.quarantine import (
@@ -10,12 +12,16 @@ from code_scanner.quarantine import (
     STATUS_NEEDS_REVIEW,
     STATUS_OK,
     QuarantineReviewer,
+    canary_tools_to_schema,
     iter_review_files,
     redact,
     review_tree,
+    sanitize_tool_name,
     spotlight,
 )
 from code_scanner.store import RunStore
+
+_OPENAI_NAME = re.compile(r"^[a-zA-Z0-9_-]+$")
 
 CANARIES = build_canary_set(("cursor", "claude_code"), include_agnostic=True)
 
@@ -32,6 +38,37 @@ def test_spotlight_fences_content():
 def test_redact_masks_secrets():
     assert redact("key=SECRET123 end", ["SECRET123"]) == f"key={REDACTION_MARK} end"
     assert redact("nothing", None) == "nothing"
+
+
+def test_all_generated_tool_names_are_api_safe():
+    # Includes codex_cli's multi_tool_use.parallel, which has an illegal dot.
+    from code_scanner.canary import build_canary_set
+
+    every = build_canary_set(
+        ("claude_code", "codex_cli", "gemini_cli", "cursor", "opencode", "zed", "cline", "warp"),
+        include_agnostic=True,
+    )
+    schema = canary_tools_to_schema(every)
+    for tool in schema:
+        assert _OPENAI_NAME.match(tool["function"]["name"]), tool["function"]["name"]
+
+
+def test_sanitize_maps_back_for_attribution():
+    assert sanitize_tool_name("multi_tool_use.parallel") == "multi_tool_use_parallel"
+
+    canaries = build_canary_set(("codex_cli",), include_agnostic=False)
+    reviewer = QuarantineReviewer(FakeBackend(), canaries)
+    # the model can only call the sanitized name
+    sanitized = sanitize_tool_name("multi_tool_use.parallel")
+
+    def responder(s, u, t):
+        return BackendResponse(tool_calls=[ToolCall(sanitized, {"args": "x"})])
+
+    reviewer.backend = FakeBackend(responder)
+    out = reviewer.review_file("x", b"data")
+    assert out.canary_event is not None
+    # recorded under the canonical (dotted) name, attributed to codex
+    assert out.canary_event["tool"] == "multi_tool_use.parallel"
 
 
 def test_clean_verdict():

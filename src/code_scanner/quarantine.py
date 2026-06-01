@@ -16,6 +16,7 @@ Classification of the model response:
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
@@ -65,27 +66,52 @@ SUBMIT_VERDICT_TOOL: dict = {
 }
 
 
+# OpenAI (and most compatible providers) require function names to match this.
+_INVALID_TOOL_NAME_CHARS = re.compile(r"[^a-zA-Z0-9_-]")
+
+
+def sanitize_tool_name(name: str) -> str:
+    """Make a tool name API-safe (e.g. ``multi_tool_use.parallel`` -> ``..._parallel``).
+
+    The transform is recorded by the reviewer so a fired decoy maps back to its
+    canonical name for harness attribution.
+    """
+    safe = _INVALID_TOOL_NAME_CHARS.sub("_", name)[:64]
+    return safe or "_canary"
+
+
 def canary_tools_to_schema(canaries: list[CanaryTool]) -> list[dict]:
-    """Render inert canary decoys as OpenAI-format function tools."""
-    return [
-        {
-            "type": "function",
-            "function": {
-                "name": c.name,
-                "description": c.description,
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "args": {
-                            "type": "string",
-                            "description": "Arguments for the operation.",
-                        }
+    """Render inert canary decoys as OpenAI-format function tools (names sanitized).
+
+    De-duplicated by the sanitized name so we never emit two tools with the same
+    API name (which providers reject).
+    """
+    schema: list[dict] = []
+    seen: set[str] = set()
+    for c in canaries:
+        name = sanitize_tool_name(c.name)
+        if name in seen:
+            continue
+        seen.add(name)
+        schema.append(
+            {
+                "type": "function",
+                "function": {
+                    "name": name,
+                    "description": c.description,
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "args": {
+                                "type": "string",
+                                "description": "Arguments for the operation.",
+                            }
+                        },
                     },
                 },
-            },
-        }
-        for c in canaries
-    ]
+            }
+        )
+    return schema
 
 
 SYSTEM_PROMPT = (
@@ -155,7 +181,10 @@ class QuarantineReviewer:
     ) -> None:
         self.backend = backend
         self.canaries = canaries
-        self.canary_names = {c.name for c in canaries}
+        # The model only ever sees the API-safe (sanitized) names; map fired names
+        # back to canonical for harness attribution.
+        self._canonical_by_sanitized = {sanitize_tool_name(c.name): c.name for c in canaries}
+        self.canary_sanitized_names = set(self._canonical_by_sanitized)
         self.tools = [SUBMIT_VERDICT_TOOL, *canary_tools_to_schema(canaries)]
         self.store = store
         self.max_file_bytes = max_file_bytes
@@ -189,16 +218,17 @@ class QuarantineReviewer:
     def _classify(
         self, file_path: str, request_id: str, content_sha: str, response: BackendResponse
     ) -> ReviewOutcome:
-        fired = [tc for tc in response.tool_calls if tc.name in self.canary_names]
+        fired = [tc for tc in response.tool_calls if tc.name in self.canary_sanitized_names]
         if fired:
             # A canary fired: highest-signal injection-attempt evidence. We record
             # it, force HUMAN_REVIEW, and return NO tool result — nothing executes.
             tc = fired[0]
-            attr = attribute(tc.name)
+            canonical = self._canonical_by_sanitized.get(tc.name, tc.name)
+            attr = attribute(canonical)
             event = {
                 "request_id": request_id,
                 "file_path": file_path,
-                "tool": tc.name,
+                "tool": canonical,
                 "tool_input": tc.arguments,
                 "harness": attr.fingerprints,
                 "action_class": attr.action_class,
@@ -212,9 +242,9 @@ class QuarantineReviewer:
                 file_path=file_path,
                 contains_injection=True,
                 confidence=1.0,
-                summary=f"canary '{tc.name}' fired — attempted prompt injection",
+                summary=f"canary '{canonical}' fired — attempted prompt injection",
                 status=STATUS_HUMAN_REVIEW,
-                findings=[f"decoy {tc.name} invoked"],
+                findings=[f"decoy {canonical} invoked"],
                 request_id=request_id,
             )
             return ReviewOutcome(verdict=verdict, canary_event=event)

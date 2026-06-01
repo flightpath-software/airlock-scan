@@ -1,0 +1,1 @@
+Sanitize canary tool names for the OpenAI-compatible API (function names must match `^[a-zA-Z0-9_-]+$`), so decoys like Codex's `multi_tool_use.parallel` no longer cause an HTTP 400. The transform is reversible: a fired decoy still maps back to its canonical name for harness attribution, and names are de-duplicated to avoid collisions.
