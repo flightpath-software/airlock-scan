@@ -12,6 +12,9 @@ and how to run it; this folder covers contributor workflows.
 - [Project plan](project-plan.md) — roadmap for the two-tier, injection-
   resistant repo/skill vetting pipeline (deterministic gate + Dual-LLM
   quarantine + canary tripwires).
+- [Future work](future-work.md) — deferred backlog (YARA, dynamic-sandbox
+  escalation, capability tracking, …) intentionally outside the committed
+  milestones.
 
 ## Quick reference
 
