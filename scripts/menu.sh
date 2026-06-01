@@ -15,6 +15,8 @@ while true; do
     "Install / check tools" \
     "Configure shell" \
     "Doctor (env + OSV audit)" \
+    "Add changelog entry" \
+    "Cut a release" \
     "Quit")"
 
   case "$choice" in
@@ -22,6 +24,8 @@ while true; do
     "Install / check tools")    bash "${ROOT}/scripts/install-tools.sh" || true ;;
     "Configure shell")          bash "${ROOT}/scripts/shell-setup.sh" || true ;;
     "Doctor (env + OSV audit)") bash "${ROOT}/scripts/doctor.sh" || true ;;
+    "Add changelog entry")      bash "${ROOT}/scripts/changelog.sh" || true ;;
+    "Cut a release")            bash "${ROOT}/scripts/release.sh" || true ;;
     "Quit"|"")                  log_info "bye"; exit 0 ;;
     *)                          log_warn "unknown choice: ${choice}" ;;
   esac

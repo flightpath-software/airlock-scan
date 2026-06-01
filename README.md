@@ -98,8 +98,22 @@ uv run ruff check .           # lint
 Dependencies are always managed with `uv add` / `uv add --dev` so `pyproject.toml` and
 `uv.lock` stay in sync.
 
+## Contributing: commits, changelog & releases
+
+- **Commits** follow [Conventional Commits](https://www.conventionalcommits.org).
+  Enable the template with `git config commit.template .gitmessage.txt`, or use
+  `uv run cz commit`. Using the **Tower** Git client? See [docs/commits.md](docs/commits.md).
+- **Every change adds a news fragment** under [`changelog.d/`](changelog.d/) via
+  `cscan changelog`; the human-readable `CHANGELOG.md` is compiled by towncrier.
+  See [docs/changelog.md](docs/changelog.md).
+- **Releases:** `cscan release` builds the changelog, then bumps and tags the
+  version (keeping `pyproject.toml` and `uv.lock` in sync) via commitizen.
+- **CI** ([.github/workflows/ci.yml](.github/workflows/ci.yml)) runs lint + tests,
+  and on PRs guards that a changelog fragment exists (`towncrier check`) and that
+  commit messages are valid (`cz check`).
+
 ## TODO
 
 - Choose and add a `LICENSE` before any public distribution (currently `license = "TODO"`).
 - Populate custom `semgrep` rules under `config/semgrep/`.
-- Add CI (lint/test + a self-scan of this repo).
+- Optional: add a CI step that self-scans this repo with `cscan`.

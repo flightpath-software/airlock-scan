@@ -6,6 +6,8 @@
 #   cscan install [--yes]      detect / install scanners
 #   cscan setup                configure your shell (PATH + cooldown env)
 #   cscan doctor               environment + OSV supply-chain audit
+#   cscan changelog [preview]  create a news fragment (or preview the draft)
+#   cscan release [--yes]      build changelog, bump version, tag
 #   cscan report <dir> [..]    run the Python helper directly on a results dir
 #   cscan -h | --help          show this help
 set -uo pipefail
@@ -27,6 +29,8 @@ case "$cmd" in
   install|install-tools) exec bash "${ROOT}/scripts/install-tools.sh" "$@" ;;
   setup|shell-setup)  exec bash "${ROOT}/scripts/shell-setup.sh" "$@" ;;
   doctor)             exec bash "${ROOT}/scripts/doctor.sh" "$@" ;;
+  changelog|ch)       exec bash "${ROOT}/scripts/changelog.sh" "$@" ;;
+  release)            exec bash "${ROOT}/scripts/release.sh" "$@" ;;
   report)             ( cd "$ROOT" && exec uv run cscan-helper report "$@" ) ;;
   -h|--help|help)     usage ;;
   *)                  log_err "unknown command: ${cmd}"; echo; usage; exit 2 ;;

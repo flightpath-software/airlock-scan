@@ -1,0 +1,35 @@
+# <type>(<optional scope>): <short summary>   <-- max ~50 chars, imperative mood
+#
+# <body: what & why, wrap at ~72 chars>
+#
+# <footer: BREAKING CHANGE: ... | Refs: #123 | Closes: #123>
+#
+# ---------------------------------------------------------------------------
+# Conventional Commits — https://www.conventionalcommits.org
+#
+# type:  feat      a new feature                 (-> MINOR version bump)
+#        fix       a bug fix                      (-> PATCH)
+#        perf      performance improvement        (-> PATCH)
+#        refactor  code change, no feature/fix    (-> PATCH)
+#        docs      documentation only
+#        test      tests only
+#        build     build system / dependencies
+#        ci        CI configuration
+#        chore     maintenance, no src change
+#        revert    revert a previous commit
+#
+# Use a scope for the area, e.g.  feat(scanners): ...   fix(security): ...
+# (The changelog section — Security, Scanners, etc. — is chosen separately by
+#  the news-fragment type via `cscan changelog`, not by the commit type.)
+#
+# Breaking change: add "!" after type/scope  (e.g. feat!: ...)  OR a
+# "BREAKING CHANGE:" footer.  (pre-1.0 this bumps MINOR, not MAJOR.)
+#
+# Examples:
+#   feat(scanners): add osv-scanner adapter
+#   fix(report): treat unknown SARIF level as medium
+#   fix(security): refuse install of OSV-flagged versions
+#   docs(commits): document Tower workflow
+#
+# Remember: also add a changelog fragment  ->  cscan changelog
+# ---------------------------------------------------------------------------

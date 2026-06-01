@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: lint + test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      # --frozen: install exactly what's in uv.lock (reproducible; no re-resolution).
+      - name: Sync
+        run: uv sync --frozen
+      - name: Lint (ruff)
+        run: uv run ruff check .
+      - name: Test (pytest)
+        run: uv run pytest -q
+      - name: Shell syntax check
+        run: |
+          for f in bin/cscan scripts/*.sh scripts/lib/*.sh scanners/*.sh; do
+            bash -n "$f"
+          done
+
+  guards:
+    name: changelog + commit guard
+    runs-on: ubuntu-latest
+    # These guards only make sense for the diff a PR introduces.
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0          # full history so we can diff against the base
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: Sync
+        run: uv sync --frozen
+      - name: Fetch base branch
+        run: git fetch --no-tags origin "${{ github.base_ref }}"
+      # Fails the PR unless it adds a news fragment under changelog.d/
+      # (automatically skipped on release branches that edit CHANGELOG.md).
+      - name: Changelog fragment present
+        run: uv run towncrier check --compare-with "origin/${{ github.base_ref }}"
+      # Fails the PR if any commit message isn't a valid Conventional Commit.
+      - name: Conventional Commits
+        run: uv run cz check --rev-range "origin/${{ github.base_ref }}..HEAD"
