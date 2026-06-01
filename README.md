@@ -78,13 +78,22 @@ exclude-newer = "3 days"
 ## Layout
 
 ```
-bin/cscan            # gum launcher (main entry point)
-scripts/             # gum-driven shell UX + shared libs
-scanners/            # one adapter per tool (detect / install / run)
-config/scanners.toml # declarative tool registry
-src/code_scanner/    # thin Python helper (parse + merge + report)
-tests/               # helper tests
+bin/cscan              # gum launcher (main entry point)
+scripts/               # gum-driven shell UX + shared libs
+scanners/              # one adapter per tool (detect / install / run)
+config/scanners.toml   # declarative tool registry
+src/code_scanner/      # thin Python helper (parse + merge + report)
+src/code_scanner/data/ # vendored harness-signature dataset (canary fingerprinting)
+data/                  # human-facing source of the harness dataset (YAML)
+docs/                  # project plan, canary design, changelog/commit guides
+tests/                 # helper tests
 ```
+
+The Python helper is growing the injection-vetting pipeline (see
+[docs/project-plan.md](docs/project-plan.md)). Beyond `report`, it now exposes
+`index rebuild` (rebuild a run's derived SQLite index from its files) and
+`canary list` / `canary attribute` (inspect the decoy registry and harness
+fingerprinting — see [docs/canary-tripwires.md](docs/canary-tripwires.md)).
 
 ## Development
 

@@ -53,6 +53,39 @@ def _build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Emit machine-readable JSON instead of a table.",
     )
+
+    # index — manage the derived, rebuildable SQLite index over a run directory.
+    index = sub.add_parser("index", help="Manage the derived SQLite index for a run.")
+    index_sub = index.add_subparsers(dest="index_command", required=True)
+    index_rebuild = index_sub.add_parser(
+        "rebuild",
+        help="Rebuild <run-dir>/index.db from the run's files alone.",
+    )
+    index_rebuild.add_argument("run_dir", type=Path, help="A cscan run directory.")
+
+    # canary — inspect the inert decoy tool registry and harness attribution.
+    canary = sub.add_parser("canary", help="Inspect canary tripwires / harness fingerprinting.")
+    canary_sub = canary.add_subparsers(dest="canary_command", required=True)
+    canary_list = canary_sub.add_parser("list", help="List the decoy tool set.")
+    canary_list.add_argument(
+        "--harness",
+        action="append",
+        dest="harnesses",
+        help="Harness id to include (repeatable). Defaults to configured sets.",
+    )
+    canary_list.add_argument(
+        "--no-agnostic",
+        action="store_true",
+        help="Exclude the harness-agnostic decoy set.",
+    )
+    canary_list.add_argument("--json", action="store_true", help="Emit JSON.")
+    canary_attr = canary_sub.add_parser(
+        "attribute",
+        help="Show which harness a fired decoy name fingerprints.",
+    )
+    canary_attr.add_argument("tool_name", help="The fired canary tool name.")
+    canary_attr.add_argument("--json", action="store_true", help="Emit JSON.")
+
     return parser
 
 
@@ -64,12 +97,60 @@ def _cmd_report(args: argparse.Namespace) -> int:
     return 0 if report.passed else 1
 
 
+def _cmd_index(args: argparse.Namespace) -> int:
+    from code_scanner.database import rebuild_index
+
+    if args.index_command == "rebuild":
+        db_path = rebuild_index(args.run_dir)
+        print(f"rebuilt {db_path}")
+        return 0
+    return 2
+
+
+def _cmd_canary(args: argparse.Namespace) -> int:
+    import json
+
+    from code_scanner.canary import attribute, build_canary_set
+
+    if args.canary_command == "list":
+        if args.harnesses:
+            harnesses = tuple(args.harnesses)
+        else:
+            from code_scanner.config import load_config
+
+            harnesses = load_config().canary.harness_sets
+        tools = build_canary_set(harnesses, include_agnostic=not args.no_agnostic)
+        if args.json:
+            print(json.dumps([t.__dict__ for t in tools], indent=2, default=list))
+        else:
+            for t in tools:
+                print(f"{t.name:<22} {t.action_class:<9} {t.source:<18} {','.join(t.harnesses)}")
+        return 0
+
+    if args.canary_command == "attribute":
+        attr = attribute(args.tool_name)
+        if args.json:
+            print(json.dumps(attr.__dict__, indent=2, default=list))
+        else:
+            print(f"tool:          {attr.tool}")
+            print(f"action_class:  {attr.action_class}")
+            print(f"specificity:   {attr.specificity}")
+            print(f"fingerprints:  {attr.fingerprints or '-'}")
+            print(f"exposed by:    {', '.join(attr.harnesses_exposing) or '-'}")
+        return 0
+    return 2
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
     try:
         if args.command == "report":
             return _cmd_report(args)
+        if args.command == "index":
+            return _cmd_index(args)
+        if args.command == "canary":
+            return _cmd_canary(args)
     except Exception as exc:  # noqa: BLE001 - surface a clean error, never a traceback
         print(f"cscan-helper: error: {exc}", file=sys.stderr)
         return 3
