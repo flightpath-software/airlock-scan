@@ -9,6 +9,9 @@ and how to run it; this folder covers contributor workflows.
   template, `cz commit`, and how to do it from the **Tower** Git client.
 - [Changelog & releases](changelog.md) — how to add a human-readable news
   fragment for every change, preview the draft, and cut a release.
+- [Project plan](project-plan.md) — roadmap for the two-tier, injection-
+  resistant repo/skill vetting pipeline (deterministic gate + Dual-LLM
+  quarantine + canary tripwires).
 
 ## Quick reference
 
