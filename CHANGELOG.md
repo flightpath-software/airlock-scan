@@ -11,3 +11,8 @@ Changes for the upcoming release are kept as individual news fragments in
 
 <!-- towncrier release notes start -->
 
+## [0.2.0] - 2026-06-01
+
+### Changed
+
+- initial release
