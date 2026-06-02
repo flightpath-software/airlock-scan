@@ -37,9 +37,13 @@ INDEX_DB_NAME = "index.db"
 
 
 def new_run_id(now: datetime | None = None) -> str:
-    """Sortable run id: ``YYYYMMDDTHHMMSSZ-<rand6>`` (UTC + short random suffix)."""
+    """Human-readable run id: ``YYYYMMDD-<rand6>`` (UTC date + short random suffix).
+
+    The date keeps runs grouped/orderable by day; the random suffix makes them
+    unique. For exact ordering within a day, use ``started_at`` in the manifest.
+    """
     now = now or datetime.now(timezone.utc)
-    stamp = now.astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    stamp = now.astimezone(timezone.utc).strftime("%Y%m%d")
     suffix = os.urandom(3).hex()
     return f"{stamp}-{suffix}"
 

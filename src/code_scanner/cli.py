@@ -127,6 +127,36 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Disable canary-fire bisection (cheaper; skips the extra probe calls).",
     )
 
+    # vet — the unified run: merge Tier-1 scanner output + Tier-2 quarantine.
+    vet = sub.add_parser(
+        "vet",
+        help="Unified run: merge Tier-1 findings (--tier1-results) + Tier-2 into one ~/cscan run.",
+    )
+    vet.add_argument("target", type=Path, help="Directory to vet.")
+    vet.add_argument(
+        "--tier1-results",
+        type=Path,
+        default=None,
+        dest="tier1_results",
+        help="Directory of Tier-1 scanner output to merge (from scripts/scan.sh).",
+    )
+    vet.add_argument(
+        "--fake",
+        action="store_true",
+        help="Use the offline FakeBackend (no API key, no network) for a dry run.",
+    )
+    vet.add_argument(
+        "--gate",
+        choices=_GATE_CHOICES,
+        default="high",
+        help="Severity gate for the run verdict. Default: high.",
+    )
+    vet.add_argument(
+        "--no-localize",
+        action="store_true",
+        help="Disable canary-fire bisection (cheaper; skips the extra probe calls).",
+    )
+
     return parser
 
 
@@ -225,14 +255,53 @@ def _cmd_canary(args: argparse.Namespace) -> int:
     return 2
 
 
-def _cmd_quarantine(args: argparse.Namespace) -> int:
+def _resolve_backend(cfg, fake: bool):
+    """Build the Tier-2 backend, or print an error and return None."""
     import os
 
+    from code_scanner.llm_backend import FakeBackend, from_config
+
+    if fake:
+        return FakeBackend()
+    api_key = os.environ.get(cfg.llm.api_key_env)
+    if not api_key and cfg.llm.provider != "local":
+        print(
+            f"cscan-helper: error: no API key in ${cfg.llm.api_key_env}. "
+            f"Set it, choose provider=local, or use --fake.",
+            file=sys.stderr,
+        )
+        return None
+    return from_config(cfg.llm, api_key=api_key)
+
+
+def _file_cap_note(cfg) -> None:
+    """Alert when the default file cap applies (each file is one LLM call)."""
+    import os
+
+    if "CSCAN_LLM_MAX_FILES" not in os.environ:
+        print(
+            f"note: reviewing at most {cfg.llm.max_files} file(s) this run "
+            f"(default cap). Set CSCAN_LLM_MAX_FILES to review more.",
+            file=sys.stderr,
+        )
+
+
+def _print_canary_lines(canary_events: list[dict]) -> None:
+    for ev in canary_events:
+        line = f"  ⚠ canary {ev.get('tool')} in {ev.get('file_path')}"
+        if ev.get("harness"):
+            line += f" (harness: {ev['harness']})"
+        span = ev.get("localized_span")
+        if span:
+            line += f" — lines {span['start_line']}-{span['end_line']}"
+        print(line)
+
+
+def _cmd_quarantine(args: argparse.Namespace) -> int:
     from code_scanner.canary import build_canary_set
     from code_scanner.config import load_config
-    from code_scanner.gate import decide
-    from code_scanner.llm_backend import FakeBackend, from_config
     from code_scanner.database import build_index
+    from code_scanner.gate import decide
     from code_scanner.quarantine import QuarantineReviewer, review_tree
     from code_scanner.store import RunStore
 
@@ -242,27 +311,10 @@ def _cmd_quarantine(args: argparse.Namespace) -> int:
         print(f"cscan-helper: error: not a directory: {target}", file=sys.stderr)
         return 2
 
-    if args.fake:
-        backend = FakeBackend()
-    else:
-        api_key = os.environ.get(cfg.llm.api_key_env)
-        if not api_key and cfg.llm.provider != "local":
-            print(
-                f"cscan-helper: error: no API key in ${cfg.llm.api_key_env}. "
-                f"Set it, choose provider=local, or use --fake.",
-                file=sys.stderr,
-            )
-            return 2
-        backend = from_config(cfg.llm, api_key=api_key)
-
-    # Cost/safety guard: when the user hasn't explicitly chosen a cap, limit the
-    # number of files reviewed and tell them so (each file is a separate LLM call).
-    if "CSCAN_LLM_MAX_FILES" not in os.environ:
-        print(
-            f"note: reviewing at most {cfg.llm.max_files} file(s) this run "
-            f"(default cap). Set CSCAN_LLM_MAX_FILES to review more.",
-            file=sys.stderr,
-        )
+    backend = _resolve_backend(cfg, args.fake)
+    if backend is None:
+        return 2
+    _file_cap_note(cfg)
 
     canaries = build_canary_set(cfg.canary.harness_sets, include_agnostic=cfg.canary.agnostic_set)
     store = RunStore.create(
@@ -297,14 +349,89 @@ def _cmd_quarantine(args: argparse.Namespace) -> int:
     print(decision.summary_line())
     for reason in decision.reasons:
         print(f"  - {reason}")
-    for ev in canary_events:
-        line = f"  ⚠ canary {ev.get('tool')} in {ev.get('file_path')}"
-        if ev.get("harness"):
-            line += f" (harness: {ev['harness']})"
-        span = ev.get("localized_span")
-        if span:
-            line += f" — lines {span['start_line']}-{span['end_line']}"
-        print(line)
+    _print_canary_lines(canary_events)
+    return 0 if decision.installable else 1
+
+
+def _cmd_vet(args: argparse.Namespace) -> int:
+    """Unified run: merge Tier-1 scanner output + Tier-2 quarantine into one run."""
+    from datetime import datetime, timezone
+
+    from code_scanner.canary import build_canary_set
+    from code_scanner.config import load_config
+    from code_scanner.database import build_index
+    from code_scanner.gate import decide
+    from code_scanner.quarantine import QuarantineReviewer, review_tree
+    from code_scanner.report import build_report, render_markdown
+    from code_scanner.store import RunStore
+
+    cfg = load_config()
+    target = args.target.expanduser().resolve()
+    if not target.is_dir():
+        print(f"cscan-helper: error: not a directory: {target}", file=sys.stderr)
+        return 2
+
+    # Tier-1: optional deterministic findings produced by the shell scanners.
+    findings, warnings = ([], [])
+    if args.tier1_results:
+        findings, warnings = load_results_dir(args.tier1_results)
+
+    backend = _resolve_backend(cfg, args.fake)
+    if backend is None:
+        return 2
+    _file_cap_note(cfg)
+
+    canaries = build_canary_set(cfg.canary.harness_sets, include_agnostic=cfg.canary.agnostic_set)
+    store = RunStore.create(
+        cfg.store_root,
+        target=str(target),
+        gate=args.gate,
+        backend=cfg.llm.provider,
+        model=cfg.llm.effective_model,
+        cscan_version=__version__,
+    )
+    reviewer = QuarantineReviewer(
+        backend,
+        canaries,
+        store=store,
+        max_file_bytes=cfg.llm.max_file_bytes,
+        bisect_on_fire=cfg.canary.bisect_on_fire and not args.no_localize,
+    )
+    outcomes = review_tree(reviewer, target, max_files=cfg.llm.max_files)
+    verdicts = [o.verdict.as_dict() for o in outcomes]
+
+    store.write_report(
+        static_findings=[f.as_dict() for f in findings],
+        file_verdicts=verdicts,
+    )
+    canary_events = store.iter_canary_events()
+    gate = Severity.parse(args.gate)
+    report = build_report(findings, gate=gate, warnings=warnings)
+    decision = decide(findings, gate=gate, canary_events=canary_events, file_verdicts=verdicts)
+    store.report_md_path.write_text(
+        render_markdown(
+            report,
+            target=str(target),
+            verdict_label=decision.verdict.label,
+            generated=datetime.now(timezone.utc).isoformat(),
+            file_verdicts=verdicts,
+            canary_events=canary_events,
+        ),
+        encoding="utf-8",
+    )
+    build_index(store, store.index_db_path)
+
+    print(f"vetted {target}")
+    print(
+        f"  Tier-1: {len(findings)} finding(s)   "
+        f"Tier-2: {len(outcomes)} file(s), {len(canary_events)} canary fire(s)"
+    )
+    print(decision.summary_line())
+    for reason in decision.reasons:
+        print(f"  - {reason}")
+    _print_canary_lines(canary_events)
+    print(f"run:    {store.run_dir}")
+    print(f"report: {store.report_md_path}")
     return 0 if decision.installable else 1
 
 
@@ -322,6 +449,8 @@ def main(argv: list[str] | None = None) -> int:
             return _cmd_canary(args)
         if args.command == "quarantine":
             return _cmd_quarantine(args)
+        if args.command == "vet":
+            return _cmd_vet(args)
     except Exception as exc:  # noqa: BLE001 - surface a clean error, never a traceback
         print(f"cscan-helper: error: {exc}", file=sys.stderr)
         return 3
