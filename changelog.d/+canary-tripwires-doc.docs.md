@@ -1,1 +1,0 @@
-Add `docs/canary-tripwires.md` explaining the canary sensor approach (why a decoy fire is high-signal, harness fingerprinting) and how the LLM review is kept from doing any damage — capability removal rather than a sandbox (whitelist-only tools, provider built-in tools disabled, inert handlers).

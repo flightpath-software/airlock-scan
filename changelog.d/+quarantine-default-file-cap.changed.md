@@ -1,1 +1,0 @@
-Default the Tier-2 file cap to 5 (was 400) as a conservative cost/safety guard — each reviewed file is a separate LLM call. When `CSCAN_LLM_MAX_FILES` is not set, `cscan-helper quarantine` now alerts that the default cap applies and how to raise it.

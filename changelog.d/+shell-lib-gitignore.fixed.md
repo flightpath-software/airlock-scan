@@ -1,1 +1,0 @@
-Stop `.gitignore` from silently excluding the shell helper libraries: the unanchored `lib/` rule (meant for Python build dirs) also matched `scripts/lib/`. Anchored it to the repo root (`/lib/`, `/lib64/`) and made the CI shell-syntax check tolerant of an empty `scripts/lib/*.sh` glob (it was exiting 127 when the directory was absent).
