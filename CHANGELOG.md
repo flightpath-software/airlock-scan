@@ -11,6 +11,18 @@ Changes for the upcoming release are kept as individual news fragments in
 
 <!-- towncrier release notes start -->
 
+## [0.4.0] - 2026-06-01
+
+### Added
+
+- Add `--localize` canary bisection: when a decoy fires, optionally re-run the inert reviewer over halves of the file to narrow the triggering span to a few lines (recorded as `localized_span` in the event and a `localized_span_json` column in the index, and shown in the `quarantine` summary). On by default when a canary fires; `quarantine --no-localize` skips the extra probe calls. Completes the M3 canary subsystem.
+- Add `cscan-helper ingest`, which normalizes Tier-1 scanner output into a user-local `~/cscan/<run-id>/` run (manifest + `report.json` + a readable `report.md` + queryable index) and applies the gate. `scripts/scan.sh` now routes through it, so deterministic scans land in `~/cscan` alongside Tier-2 runs instead of only printing a table.
+
+### Fixed
+
+- Fix unreadable finding tables: long registry rule IDs (e.g. Semgrep's `...dynamic-urllib-use-detected.dynamic-urllib-use-detected`) no longer overflow — duplicate dotted segments are collapsed, the rule is shortened to its last meaningful segments, and the Rule/Location/Message columns now wrap instead of running off-screen.
+
+
 ## [0.3.0] - 2026-06-01
 
 ### Added

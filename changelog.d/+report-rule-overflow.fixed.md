@@ -1,1 +1,0 @@
-Fix unreadable finding tables: long registry rule IDs (e.g. Semgrep's `...dynamic-urllib-use-detected.dynamic-urllib-use-detected`) no longer overflow — duplicate dotted segments are collapsed, the rule is shortened to its last meaningful segments, and the Rule/Location/Message columns now wrap instead of running off-screen.
