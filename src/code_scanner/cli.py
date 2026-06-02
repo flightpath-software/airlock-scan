@@ -54,6 +54,24 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Emit machine-readable JSON instead of a table.",
     )
 
+    # ingest — normalize Tier-1 scanner output into a user-local ~/cscan run.
+    ingest = sub.add_parser(
+        "ingest",
+        help="Ingest scanner output into a ~/cscan run (report.json + report.md + index).",
+    )
+    ingest.add_argument(
+        "results_dir",
+        type=Path,
+        help="Directory containing scanner output (e.g. <target>/.cscan).",
+    )
+    ingest.add_argument("--target", type=Path, default=None, help="Path that was scanned.")
+    ingest.add_argument(
+        "--gate",
+        choices=_GATE_CHOICES,
+        default="high",
+        help="Fail (exit 1) if any finding is at or above this severity. Default: high.",
+    )
+
     # index — manage the derived, rebuildable SQLite index over a run directory.
     index = sub.add_parser("index", help="Manage the derived SQLite index for a run.")
     index_sub = index.add_subparsers(dest="index_command", required=True)
@@ -103,6 +121,11 @@ def _build_parser() -> argparse.ArgumentParser:
         default="high",
         help="Severity gate for the run verdict. Default: high.",
     )
+    quarantine.add_argument(
+        "--no-localize",
+        action="store_true",
+        help="Disable canary-fire bisection (cheaper; skips the extra probe calls).",
+    )
 
     return parser
 
@@ -113,6 +136,49 @@ def _cmd_report(args: argparse.Namespace) -> int:
     report = build_report(findings, gate=gate, warnings=warnings)
     print(render(report, as_json=args.json))
     return 0 if report.passed else 1
+
+
+def _cmd_ingest(args: argparse.Namespace) -> int:
+    from datetime import datetime, timezone
+
+    from code_scanner.config import load_config
+    from code_scanner.database import build_index
+    from code_scanner.gate import decide
+    from code_scanner.report import build_report, render, render_markdown
+    from code_scanner.store import RunStore
+
+    findings, warnings = load_results_dir(args.results_dir)
+    gate = Severity.parse(args.gate)
+    report = build_report(findings, gate=gate, warnings=warnings)
+    decision = decide(findings, gate=gate)
+
+    cfg = load_config()
+    target = str((args.target or args.results_dir))
+    store = RunStore.create(
+        cfg.store_root,
+        target=target,
+        gate=args.gate,
+        backend="tier1",
+        model="",
+        cscan_version=__version__,
+    )
+    store.write_report(static_findings=[f.as_dict() for f in findings])
+    store.report_md_path.write_text(
+        render_markdown(
+            report,
+            target=target,
+            verdict_label=decision.verdict.label,
+            generated=datetime.now(timezone.utc).isoformat(),
+        ),
+        encoding="utf-8",
+    )
+    build_index(store, store.index_db_path)
+
+    print(render(report))
+    print(f"\n{decision.summary_line()}")
+    print(f"run:    {store.run_dir}")
+    print(f"report: {store.report_md_path}")
+    return 0 if decision.installable else 1
 
 
 def _cmd_index(args: argparse.Namespace) -> int:
@@ -208,7 +274,11 @@ def _cmd_quarantine(args: argparse.Namespace) -> int:
         cscan_version=__version__,
     )
     reviewer = QuarantineReviewer(
-        backend, canaries, store=store, max_file_bytes=cfg.llm.max_file_bytes
+        backend,
+        canaries,
+        store=store,
+        max_file_bytes=cfg.llm.max_file_bytes,
+        bisect_on_fire=cfg.canary.bisect_on_fire and not args.no_localize,
     )
     outcomes = review_tree(reviewer, target, max_files=cfg.llm.max_files)
 
@@ -216,16 +286,25 @@ def _cmd_quarantine(args: argparse.Namespace) -> int:
     store.write_report(file_verdicts=verdicts)
     build_index(store, store.index_db_path)
 
+    canary_events = store.iter_canary_events()
     decision = decide(
         [],
         gate=Severity.parse(args.gate),
-        canary_events=store.iter_canary_events(),
+        canary_events=canary_events,
         file_verdicts=verdicts,
     )
     print(f"reviewed {len(outcomes)} file(s) → {store.run_dir}")
     print(decision.summary_line())
     for reason in decision.reasons:
         print(f"  - {reason}")
+    for ev in canary_events:
+        line = f"  ⚠ canary {ev.get('tool')} in {ev.get('file_path')}"
+        if ev.get("harness"):
+            line += f" (harness: {ev['harness']})"
+        span = ev.get("localized_span")
+        if span:
+            line += f" — lines {span['start_line']}-{span['end_line']}"
+        print(line)
     return 0 if decision.installable else 1
 
 
@@ -235,6 +314,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.command == "report":
             return _cmd_report(args)
+        if args.command == "ingest":
+            return _cmd_ingest(args)
         if args.command == "index":
             return _cmd_index(args)
         if args.command == "canary":

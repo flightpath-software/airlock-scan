@@ -29,6 +29,7 @@ from pathlib import Path
 SCHEMA_VERSION = "1.0"
 MANIFEST_NAME = "manifest.json"
 REPORT_NAME = "report.json"
+REPORT_MD_NAME = "report.md"
 CANARY_EVENTS_NAME = "canary-events.jsonl"
 INGESTED_DIRNAME = "ingested"
 INGESTED_INDEX_NAME = "index.jsonl"
@@ -110,6 +111,10 @@ class RunStore:
     @property
     def report_path(self) -> Path:
         return self.run_dir / REPORT_NAME
+
+    @property
+    def report_md_path(self) -> Path:
+        return self.run_dir / REPORT_MD_NAME
 
     @property
     def canary_events_path(self) -> Path:

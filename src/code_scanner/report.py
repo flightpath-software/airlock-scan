@@ -91,6 +91,67 @@ def render(report: Report, *, as_json: bool = False) -> str:
         return _render_plain(report)
 
 
+def _short_rule(rule_id: str | None, *, maxlen: int = 40) -> str:
+    """Shorten noisy rule IDs for display.
+
+    Registry rules can be long and even repeat their tail
+    (e.g. ``...dynamic-urllib-use-detected.dynamic-urllib-use-detected``). We
+    drop consecutive duplicate dotted segments, keep the last two, and cap length.
+    """
+    if not rule_id:
+        return "-"
+    rid = rule_id
+    if "." in rid:
+        parts = rid.split(".")
+        deduped: list[str] = []
+        for p in parts:
+            if not deduped or deduped[-1] != p:
+                deduped.append(p)
+        rid = ".".join(deduped[-2:])
+    if len(rid) > maxlen:
+        rid = "…" + rid[-(maxlen - 1):]
+    return rid
+
+
+def _md_cell(value: object) -> str:
+    """Escape a value for a Markdown table cell."""
+    return str(value).replace("|", "\\|").replace("\n", " ").strip() or "-"
+
+
+def render_markdown(
+    report: Report,
+    *,
+    target: str = "",
+    verdict_label: str = "",
+    generated: str = "",
+) -> str:
+    """Render a durable, human-readable Markdown report."""
+    lines = ["# cscan report", ""]
+    if target:
+        lines.append(f"- **Target:** `{target}`")
+    if generated:
+        lines.append(f"- **Generated:** {generated}")
+    if verdict_label:
+        lines.append(f"- **Verdict:** {verdict_label}")
+    lines.append(f"- **Gate:** {report.gate.label}")
+    lines.append("")
+    lines.append(f"**{report.summary_line()}**")
+    lines.append("")
+    if report.findings:
+        lines.append("| Severity | Tool | Rule | Location | Message |")
+        lines.append("| --- | --- | --- | --- | --- |")
+        for f in sorted(report.findings, key=lambda x: x.severity, reverse=True):
+            lines.append(
+                f"| {f.severity.label} | {_md_cell(f.tool)} | {_md_cell(_short_rule(f.rule_id))} "
+                f"| {_md_cell(f.location)} | {_md_cell(f.message or '-')} |"
+            )
+    else:
+        lines.append("_No findings._")
+    for warning in report.warnings:
+        lines.append(f"\n> warning: {_md_cell(warning)}")
+    return "\n".join(lines) + "\n"
+
+
 def _render_rich(report: Report) -> str:
     from io import StringIO
 
@@ -104,15 +165,15 @@ def _render_rich(report: Report) -> str:
         table = Table(title="code-scanner findings", show_lines=False, expand=False)
         table.add_column("Severity", no_wrap=True)
         table.add_column("Tool", no_wrap=True)
-        table.add_column("Rule", no_wrap=True)
-        table.add_column("Location")
-        table.add_column("Message")
+        table.add_column("Rule", max_width=40, overflow="fold")
+        table.add_column("Location", max_width=30, overflow="fold")
+        table.add_column("Message", max_width=60, overflow="fold")
         for f in sorted(report.findings, key=lambda x: x.severity, reverse=True):
             style = _SEVERITY_STYLE.get(f.severity, "")
             table.add_row(
                 f"[{style}]{f.severity.label}[/]" if style else f.severity.label,
                 f.tool,
-                f.rule_id or "-",
+                _short_rule(f.rule_id),
                 f.location,
                 f.message or "-",
             )
@@ -130,7 +191,8 @@ def _render_plain(report: Report) -> str:
     lines: list[str] = []
     for f in sorted(report.findings, key=lambda x: x.severity, reverse=True):
         lines.append(
-            f"{f.severity.label:<8} {f.tool:<18} {f.location:<32} {f.rule_id or '-':<24} {f.message}"
+            f"{f.severity.label:<8} {f.tool:<18} {f.location:<32} "
+            f"{_short_rule(f.rule_id):<40} {f.message}"
         )
     for warning in report.warnings:
         lines.append(f"warning: {warning}")

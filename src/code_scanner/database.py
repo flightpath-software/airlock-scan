@@ -59,16 +59,17 @@ CREATE TABLE ingested_content (
     content    BLOB
 );
 CREATE TABLE canary_events (
-    id              INTEGER PRIMARY KEY,
-    run_id          TEXT,
-    request_id      TEXT,
-    file_path       TEXT,
-    tool            TEXT,
-    harness         TEXT,
-    action_class    TEXT,
-    tool_input_json TEXT,
-    content_sha256  TEXT,
-    ts              TEXT
+    id                 INTEGER PRIMARY KEY,
+    run_id             TEXT,
+    request_id         TEXT,
+    file_path          TEXT,
+    tool               TEXT,
+    harness            TEXT,
+    action_class       TEXT,
+    tool_input_json    TEXT,
+    content_sha256     TEXT,
+    ts                 TEXT,
+    localized_span_json TEXT
 );
 """
 
@@ -170,7 +171,7 @@ def build_index(store: RunStore, db_path: Path) -> Path:
                 ],
             )
             conn.executemany(
-                "INSERT INTO canary_events VALUES (?,?,?,?,?,?,?,?,?,?)",
+                "INSERT INTO canary_events VALUES (?,?,?,?,?,?,?,?,?,?,?)",
                 [
                     (
                         i,
@@ -183,6 +184,9 @@ def build_index(store: RunStore, db_path: Path) -> Path:
                         json.dumps(e.get("tool_input", {}), sort_keys=True),
                         e.get("content_sha256"),
                         e.get("ts"),
+                        json.dumps(e["localized_span"], sort_keys=True)
+                        if e.get("localized_span")
+                        else None,
                     )
                     for i, e in enumerate(canary, start=1)
                 ],

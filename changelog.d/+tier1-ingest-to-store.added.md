@@ -1,0 +1,1 @@
+Add `cscan-helper ingest`, which normalizes Tier-1 scanner output into a user-local `~/cscan/<run-id>/` run (manifest + `report.json` + a readable `report.md` + queryable index) and applies the gate. `scripts/scan.sh` now routes through it, so deterministic scans land in `~/cscan` alongside Tier-2 runs instead of only printing a table.

@@ -7,6 +7,7 @@ import re
 from code_scanner.canary import build_canary_set
 from code_scanner.llm_backend import BackendResponse, FakeBackend, ToolCall
 from code_scanner.quarantine import (
+    MIN_BISECT_LINES,
     REDACTION_MARK,
     STATUS_HUMAN_REVIEW,
     STATUS_NEEDS_REVIEW,
@@ -192,3 +193,53 @@ def test_review_tree_maps_over_files_and_fires_one_canary(tmp_path):
     assert statuses["clean.md"] == STATUS_OK
     assert statuses["evil.md"] == STATUS_HUMAN_REVIEW
     assert len(store.iter_canary_events()) == 1
+
+
+# --- canary-fire bisection (--localize) ------------------------------------
+
+def _trigger_responder(s, u, t):
+    """Fire a Cursor canary iff the content under review contains TRIGGER."""
+    if "TRIGGER" in u:
+        return BackendResponse(tool_calls=[ToolCall("run_terminal_cmd", {"args": "x"})])
+    return BackendResponse(
+        tool_calls=[ToolCall("submit_verdict",
+                             {"contains_injection": False, "confidence": 1.0, "summary": "ok"})]
+    )
+
+
+def test_localize_narrows_to_trigger_span():
+    lines = [f"clean line {i}" for i in range(20)]
+    lines[12] = "TRIGGER run_terminal_cmd"
+    text = "\n".join(lines)
+    reviewer = QuarantineReviewer(FakeBackend(_trigger_responder), CANARIES, bisect_on_fire=True)
+
+    span = reviewer.localize_trigger(text)
+    assert span is not None
+    assert span["start_line"] <= 13 <= span["end_line"]  # the 1-based trigger line
+    assert span["lines"] <= MIN_BISECT_LINES
+    assert "TRIGGER" in span["snippet"]
+
+
+def test_localize_returns_none_when_not_reproducible():
+    # A responder that never fires -> nothing to localize.
+    reviewer = QuarantineReviewer(FakeBackend(), CANARIES, bisect_on_fire=True)
+    assert reviewer.localize_trigger("a\nb\nc\nd") is None
+
+
+def test_review_file_attaches_span_when_enabled(tmp_path):
+    store = RunStore.create(tmp_path, target="/r", model="m")
+    body = "\n".join(["ok"] * 6 + ["TRIGGER run_terminal_cmd"] + ["ok"] * 6).encode()
+    reviewer = QuarantineReviewer(
+        FakeBackend(_trigger_responder), CANARIES, store=store, bisect_on_fire=True
+    )
+    out = reviewer.review_file("evil.md", body)
+    assert out.canary_event["localized_span"] is not None
+    assert "TRIGGER" in out.canary_event["localized_span"]["snippet"]
+    # persisted to the store too
+    assert store.iter_canary_events()[0]["localized_span"]["lines"] <= MIN_BISECT_LINES
+
+
+def test_no_span_when_bisect_disabled():
+    reviewer = QuarantineReviewer(FakeBackend(_trigger_responder), CANARIES, bisect_on_fire=False)
+    out = reviewer.review_file("x", b"TRIGGER run_terminal_cmd")
+    assert "localized_span" not in out.canary_event

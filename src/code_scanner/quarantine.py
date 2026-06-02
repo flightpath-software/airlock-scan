@@ -31,6 +31,9 @@ STATUS_NEEDS_REVIEW = "NEEDS_REVIEW"  # no usable verdict (text-only/malformed)
 
 REDACTION_MARK = "[CSCAN-REDACTED]"
 
+# Bisection stops once the suspect span is this few lines (don't over-split).
+MIN_BISECT_LINES = 3
+
 
 # --- tool schemas (OpenAI function format) ---------------------------------
 
@@ -178,6 +181,7 @@ class QuarantineReviewer:
         *,
         store: RunStore | None = None,
         max_file_bytes: int = 200_000,
+        bisect_on_fire: bool = False,
     ) -> None:
         self.backend = backend
         self.canaries = canaries
@@ -188,6 +192,7 @@ class QuarantineReviewer:
         self.tools = [SUBMIT_VERDICT_TOOL, *canary_tools_to_schema(canaries)]
         self.store = store
         self.max_file_bytes = max_file_bytes
+        self.bisect_on_fire = bisect_on_fire
 
     def review_file(
         self,
@@ -213,10 +218,15 @@ class QuarantineReviewer:
             self.store.record_ingested(request_id, file_path, sent_bytes)
 
         response = self.backend.complete(system=SYSTEM_PROMPT, user=user, tools=self.tools)
-        return self._classify(file_path, request_id, content_sha, response)
+        return self._classify(file_path, request_id, content_sha, response, text)
 
     def _classify(
-        self, file_path: str, request_id: str, content_sha: str, response: BackendResponse
+        self,
+        file_path: str,
+        request_id: str,
+        content_sha: str,
+        response: BackendResponse,
+        text: str = "",
     ) -> ReviewOutcome:
         fired = [tc for tc in response.tool_calls if tc.name in self.canary_sanitized_names]
         if fired:
@@ -236,6 +246,10 @@ class QuarantineReviewer:
                 "content_sha256": content_sha,
                 "ts": datetime.now(timezone.utc).isoformat(),
             }
+            # Optionally bisect the content to localize the triggering span. This
+            # costs extra (inert) model calls, so it is opt-in and only on a fire.
+            if self.bisect_on_fire and text:
+                event["localized_span"] = self.localize_trigger(text)
             if self.store is not None:
                 self.store.append_canary_event(event)
             verdict = FileVerdict(
@@ -277,6 +291,49 @@ class QuarantineReviewer:
                 request_id=request_id,
             )
         )
+
+    def _fires_canary(self, text: str) -> str | None:
+        """Re-run a piece of content (inert) and report any fired canary name.
+
+        Used only by bisection. No store writes, no ingested record — this is a
+        throwaway probe whose only output is "did a decoy fire?".
+        """
+        nonce = os.urandom(8).hex()
+        response = self.backend.complete(
+            system=SYSTEM_PROMPT, user=spotlight(text, nonce), tools=self.tools
+        )
+        for tc in response.tool_calls:
+            if tc.name in self.canary_sanitized_names:
+                return self._canonical_by_sanitized.get(tc.name, tc.name)
+        return None
+
+    def localize_trigger(self, text: str) -> dict | None:
+        """Bisect ``text`` to the smallest line span that still fires a canary.
+
+        Halve the content, recurse into whichever half still fires; stop at a
+        minimum span or when the trigger straddles the split. Returns a
+        ``{start_line, end_line, lines, snippet}`` dict, or ``None`` if a fire
+        can't be reproduced (e.g. a non-deterministic model).
+        """
+        lines = text.split("\n")
+        lo, hi = 0, len(lines)
+        if self._fires_canary("\n".join(lines[lo:hi])) is None:
+            return None  # couldn't reproduce; nothing to localize
+        while hi - lo > MIN_BISECT_LINES:
+            mid = (lo + hi) // 2
+            if self._fires_canary("\n".join(lines[lo:mid])):
+                hi = mid
+            elif self._fires_canary("\n".join(lines[mid:hi])):
+                lo = mid
+            else:
+                break  # trigger straddles the midpoint; keep the current span
+        snippet = "\n".join(lines[lo:hi])
+        return {
+            "start_line": lo + 1,  # 1-based, inclusive
+            "end_line": hi,
+            "lines": hi - lo,
+            "snippet": snippet[:1000],
+        }
 
 
 def is_probably_binary(data: bytes) -> bool:

@@ -104,13 +104,14 @@ milestone table in §4 for acceptance criteria.
 - [x] CLI: `quarantine <dir>` (with `--fake`), default file-cap alert
 - [🟡] Live model validation against a real endpoint (in progress; needs API key)
 
-**M3 — Canary subsystem** 🟡
+**M3 — Canary subsystem** ✅
 - [x] Inert decoy registry (harness + agnostic sets) (`canary.py`)
 - [x] Canary events recorded with captured args + content hash + traceback to ingested bytes
-- [ ] `--localize` bisection to narrow the triggering span
+- [x] `--localize` bisection to narrow the triggering span (`localize_trigger`; `quarantine --no-localize` to disable; surfaced in the summary + `localized_span_json` index column)
 
 **M4 — Harness fingerprinting + integration** 🟡
 - [x] Per-harness attribution of a fired decoy (`attribute`)
+- [x] Tier-1 scanner output lands in the `~/cscan` run store (`cscan-helper ingest`); `scan.sh` now routes through it
 - [ ] Single command running Tier-1 scanners **and** Tier-2, merged into one gated report
 
 **M5 — Test corpus & evaluation harness** ⬜
@@ -119,8 +120,8 @@ milestone table in §4 for acceptance criteria.
 
 **M6 — Operational workflow & docs** 🟡
 - [x] `docs/canary-tripwires.md` (design + safety model)
-- [ ] `report.md` human-readable rendering + triage UX
-- [ ] `cscan export` (shareable run bundle)
+- [x] `report.md` human-readable rendering (+ shortened rule IDs, wrapped table)
+- [ ] triage UX / `cscan export` (shareable run bundle)
 
 **M7 — Hardening & release** ⬜
 - [ ] Threat-model review, cost guardrails, perf pass
