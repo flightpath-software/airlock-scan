@@ -54,7 +54,9 @@ for id in "${selected[@]}"; do
 done
 
 ui_header "cscan • report (gate: ${CSCAN_GATE})"
-( cd "$ROOT" && uv run cscan-helper report "$out" --gate "$CSCAN_GATE" )
+# Normalize the raw scanner output into a user-local ~/cscan run (report.json +
+# readable report.md + queryable index), and apply the gate.
+( cd "$ROOT" && uv run cscan-helper ingest "$out" --target "$target" --gate "$CSCAN_GATE" )
 rc=$?
 
 echo
