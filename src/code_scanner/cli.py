@@ -103,6 +103,11 @@ def _build_parser() -> argparse.ArgumentParser:
         default="high",
         help="Severity gate for the run verdict. Default: high.",
     )
+    quarantine.add_argument(
+        "--no-localize",
+        action="store_true",
+        help="Disable canary-fire bisection (cheaper; skips the extra probe calls).",
+    )
 
     return parser
 
@@ -208,7 +213,11 @@ def _cmd_quarantine(args: argparse.Namespace) -> int:
         cscan_version=__version__,
     )
     reviewer = QuarantineReviewer(
-        backend, canaries, store=store, max_file_bytes=cfg.llm.max_file_bytes
+        backend,
+        canaries,
+        store=store,
+        max_file_bytes=cfg.llm.max_file_bytes,
+        bisect_on_fire=cfg.canary.bisect_on_fire and not args.no_localize,
     )
     outcomes = review_tree(reviewer, target, max_files=cfg.llm.max_files)
 
@@ -216,16 +225,25 @@ def _cmd_quarantine(args: argparse.Namespace) -> int:
     store.write_report(file_verdicts=verdicts)
     build_index(store, store.index_db_path)
 
+    canary_events = store.iter_canary_events()
     decision = decide(
         [],
         gate=Severity.parse(args.gate),
-        canary_events=store.iter_canary_events(),
+        canary_events=canary_events,
         file_verdicts=verdicts,
     )
     print(f"reviewed {len(outcomes)} file(s) → {store.run_dir}")
     print(decision.summary_line())
     for reason in decision.reasons:
         print(f"  - {reason}")
+    for ev in canary_events:
+        line = f"  ⚠ canary {ev.get('tool')} in {ev.get('file_path')}"
+        if ev.get("harness"):
+            line += f" (harness: {ev['harness']})"
+        span = ev.get("localized_span")
+        if span:
+            line += f" — lines {span['start_line']}-{span['end_line']}"
+        print(line)
     return 0 if decision.installable else 1
 
 

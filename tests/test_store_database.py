@@ -21,6 +21,7 @@ def _populate(store: RunStore) -> None:
             "action_class": "execute",
             "content_sha256": sha,
             "ts": "2026-06-01T00:00:00Z",
+            "localized_span": {"start_line": 4, "end_line": 6, "lines": 2, "snippet": "bad"},
         }
     )
     store.write_report(
@@ -65,6 +66,10 @@ def test_index_query(tmp_path):
             "SELECT tool, harness FROM canary_events WHERE request_id='req-1'"
         ).fetchone()
         assert row == ("run_terminal_cmd", "cursor")
+        span_json = conn.execute(
+            "SELECT localized_span_json FROM canary_events WHERE request_id='req-1'"
+        ).fetchone()[0]
+        assert span_json is not None and '"start_line": 4' in span_json
         # exact bytes preserved as a BLOB
         blob = conn.execute(
             "SELECT content FROM ingested_content WHERE request_id='req-1'"
