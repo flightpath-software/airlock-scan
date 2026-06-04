@@ -37,10 +37,13 @@ def _populate(store: RunStore) -> None:
     )
 
 
-def test_run_id_is_sortable_and_unique():
+def test_run_id_is_human_readable_and_unique():
+    import re
+
     ids = {new_run_id() for _ in range(50)}
     assert len(ids) == 50
-    assert all(rid[8] == "T" and rid.endswith(rid[-6:]) for rid in ids)
+    # New format: YYYYMMDD-<rand6> (e.g. 20260602-092b9b)
+    assert all(re.fullmatch(r"\d{8}-[0-9a-f]{6}", rid) for rid in ids)
 
 
 def test_create_open_roundtrip(tmp_path):

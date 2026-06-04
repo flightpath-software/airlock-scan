@@ -124,8 +124,18 @@ def render_markdown(
     target: str = "",
     verdict_label: str = "",
     generated: str = "",
+    file_verdicts: list[dict] | None = None,
+    canary_events: list[dict] | None = None,
 ) -> str:
-    """Render a durable, human-readable Markdown report."""
+    """Render a durable, human-readable Markdown report.
+
+    Tier-1 ``report.findings`` are always shown. When ``canary_events`` or
+    ``file_verdicts`` are supplied (the unified ``vet`` run), they get their own
+    sections — canary fires first, as the highest-signal evidence.
+    """
+    canary_events = canary_events or []
+    file_verdicts = file_verdicts or []
+
     lines = ["# cscan report", ""]
     if target:
         lines.append(f"- **Target:** `{target}`")
@@ -137,6 +147,30 @@ def render_markdown(
     lines.append("")
     lines.append(f"**{report.summary_line()}**")
     lines.append("")
+
+    # Canary tripwires first — a fire is the highest-signal evidence.
+    if canary_events:
+        lines.append("## ⚠ Canary tripwires (attempted prompt injection)")
+        lines.append("")
+        lines.append("| Tool | File | Harness | Span | Captured args |")
+        lines.append("| --- | --- | --- | --- | --- |")
+        for ev in canary_events:
+            span = ev.get("localized_span") or {}
+            span_txt = (
+                f"L{span['start_line']}-{span['end_line']}"
+                if span.get("start_line")
+                else "-"
+            )
+            args_txt = _md_cell(ev.get("tool_input"))[:120]
+            lines.append(
+                f"| {_md_cell(ev.get('tool'))} | {_md_cell(ev.get('file_path'))} "
+                f"| {_md_cell(ev.get('harness') or '-')} | {span_txt} | {args_txt} |"
+            )
+        lines.append("")
+
+    # Tier-1 deterministic findings.
+    lines.append("## Tier-1 findings (deterministic)")
+    lines.append("")
     if report.findings:
         lines.append("| Severity | Tool | Rule | Location | Message |")
         lines.append("| --- | --- | --- | --- | --- |")
@@ -147,6 +181,31 @@ def render_markdown(
             )
     else:
         lines.append("_No findings._")
+
+    # Tier-2 advisory flags (only the files that need a human look).
+    if file_verdicts:
+        flagged = [
+            v
+            for v in file_verdicts
+            if v.get("contains_injection") or str(v.get("status", "")) in {"HUMAN_REVIEW", "NEEDS_REVIEW"}
+        ]
+        lines.append("")
+        lines.append(
+            f"## Tier-2 reviewer (advisory) — {len(flagged)} flagged of {len(file_verdicts)} file(s)"
+        )
+        lines.append("")
+        if flagged:
+            lines.append("| File | Status | Injection | Confidence | Summary |")
+            lines.append("| --- | --- | --- | --- | --- |")
+            for v in flagged:
+                lines.append(
+                    f"| {_md_cell(v.get('file_path'))} | {_md_cell(v.get('status'))} "
+                    f"| {'yes' if v.get('contains_injection') else 'no'} "
+                    f"| {_md_cell(v.get('confidence'))} | {_md_cell(v.get('summary'))} |"
+                )
+        else:
+            lines.append("_Nothing flagged._")
+
     for warning in report.warnings:
         lines.append(f"\n> warning: {_md_cell(warning)}")
     return "\n".join(lines) + "\n"

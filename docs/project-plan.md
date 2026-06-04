@@ -109,10 +109,10 @@ milestone table in §4 for acceptance criteria.
 - [x] Canary events recorded with captured args + content hash + traceback to ingested bytes
 - [x] `--localize` bisection to narrow the triggering span (`localize_trigger`; `quarantine --no-localize` to disable; surfaced in the summary + `localized_span_json` index column)
 
-**M4 — Harness fingerprinting + integration** 🟡
+**M4 — Harness fingerprinting + integration** ✅
 - [x] Per-harness attribution of a fired decoy (`attribute`)
 - [x] Tier-1 scanner output lands in the `~/cscan` run store (`cscan-helper ingest`); `scan.sh` now routes through it
-- [ ] Single command running Tier-1 scanners **and** Tier-2, merged into one gated report
+- [x] Single command running Tier-1 scanners **and** Tier-2, merged into one gated report (`cscan-helper vet` + `scripts/vet.sh`)
 
 **M5 — Test corpus & evaluation harness** ⬜
 - [ ] Labeled corpora: clean / trigger-word-heavy clean / adversarial / harness-targeted
