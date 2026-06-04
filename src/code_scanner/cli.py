@@ -157,6 +157,29 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Disable canary-fire bisection (cheaper; skips the extra probe calls).",
     )
 
+    # eval — score the pipeline against a labeled corpus.
+    ev = sub.add_parser(
+        "eval",
+        help="Evaluate the Tier-2 reviewer against a labeled corpus (detection / FP / attribution).",
+    )
+    ev.add_argument(
+        "--corpus",
+        type=Path,
+        default=Path("corpus"),
+        help="Corpus directory containing labels.json. Default: ./corpus.",
+    )
+    ev.add_argument(
+        "--fake",
+        action="store_true",
+        help="Offline baseline backend (always clean) — sanity-checks the harness.",
+    )
+    ev.add_argument(
+        "--heuristic",
+        action="store_true",
+        help="Offline naive backend that fires on any tool-name mention (illustrates over-defense).",
+    )
+    ev.add_argument("--json", action="store_true", help="Emit JSON instead of Markdown.")
+
     return parser
 
 
@@ -435,6 +458,48 @@ def _cmd_vet(args: argparse.Namespace) -> int:
     return 0 if decision.installable else 1
 
 
+def _cmd_eval(args: argparse.Namespace) -> int:
+    import json
+
+    from code_scanner.canary import build_canary_set
+    from code_scanner.config import load_config
+    from code_scanner.evaluate import (
+        evaluate,
+        heuristic_responder,
+        load_corpus,
+        render_eval_markdown,
+    )
+    from code_scanner.llm_backend import FakeBackend
+    from code_scanner.quarantine import QuarantineReviewer
+
+    cfg = load_config()
+    root = args.corpus.expanduser().resolve()
+    if not (root / "labels.json").is_file():
+        print(f"cscan-helper: error: no labels.json in {root}", file=sys.stderr)
+        return 2
+    items = load_corpus(root)
+
+    if args.heuristic:
+        backend = FakeBackend(heuristic_responder)
+    elif args.fake:
+        backend = FakeBackend()
+    else:
+        backend = _resolve_backend(cfg, fake=False)
+        if backend is None:
+            return 2
+
+    canaries = build_canary_set(cfg.canary.harness_sets, include_agnostic=cfg.canary.agnostic_set)
+    reviewer = QuarantineReviewer(
+        backend, canaries, store=None, max_file_bytes=cfg.llm.max_file_bytes, bisect_on_fire=False
+    )
+    report = evaluate(reviewer, items)
+    if args.json:
+        print(json.dumps(report.as_dict(), indent=2))
+    else:
+        print(render_eval_markdown(report))
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
@@ -451,6 +516,8 @@ def main(argv: list[str] | None = None) -> int:
             return _cmd_quarantine(args)
         if args.command == "vet":
             return _cmd_vet(args)
+        if args.command == "eval":
+            return _cmd_eval(args)
     except Exception as exc:  # noqa: BLE001 - surface a clean error, never a traceback
         print(f"cscan-helper: error: {exc}", file=sys.stderr)
         return 3

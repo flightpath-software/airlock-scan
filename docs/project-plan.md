@@ -114,9 +114,10 @@ milestone table in §4 for acceptance criteria.
 - [x] Tier-1 scanner output lands in the `~/cscan` run store (`cscan-helper ingest`); `scan.sh` now routes through it
 - [x] Single command running Tier-1 scanners **and** Tier-2, merged into one gated report (`cscan-helper vet` + `scripts/vet.sh`)
 
-**M5 — Test corpus & evaluation harness** ⬜
-- [ ] Labeled corpora: clean / trigger-word-heavy clean / adversarial / harness-targeted
-- [ ] AgentDojo-style runner emitting detection rate, canary FP rate, attribution accuracy, cost
+**M5 — Test corpus & evaluation harness** 🟡
+- [x] Labeled corpora under `corpus/`: clean / trigger-word-heavy clean / adversarial / harness-targeted (`labels.json`)
+- [x] Runner (`cscan-helper eval`) emitting detection rate, canary FP rate, attribution accuracy; pluggable backend (real model, `--fake` baseline, `--heuristic` over-defense demo)
+- [ ] Cost/latency accounting per run; expand corpus breadth
 
 **M6 — Operational workflow & docs** 🟡
 - [x] `docs/canary-tripwires.md` (design + safety model)
