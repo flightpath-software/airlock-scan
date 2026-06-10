@@ -64,7 +64,8 @@ uv run towncrier create -c "Add osv-scanner adapter" 123.scanner.md   # tied to 
 uv run towncrier create -c "Handle empty SARIF" +empty-sarif.fixed.md # orphan
 ```
 
-Fragment name: `<issue-or-+slug>.<type>.md`. Types (= changelog sections):
+Fragment name: `+<slug>.<type>.md` (always orphan — Linear ticket links go in the
+content, not the filename). Types (= changelog sections):
 `security`, `added`, `changed`, `fixed`, `scanner`, `deprecated`, `removed`,
 `docs`, `misc`. Write entries **for readers**, not as commit subjects. More:
 [`docs/changelog.md`](docs/changelog.md).
