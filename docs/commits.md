@@ -95,9 +95,16 @@ If you commit with [Tower](https://www.git-tower.com/):
    `fix(report): handle empty SARIF runs`. Tower won't enforce the format — CI
    (`cz check`) will, so follow the template.
 3. **Add a changelog fragment** before (or with) the commit — Tower won't do this
-   for you. Run `cscan changelog` in a terminal, then stage the new
-   `changelog.d/*.md` file in Tower alongside your changes. See
-   [changelog.md](changelog.md).
+   for you. Two options:
+   - **CLI:** run `cscan changelog` in a terminal; it prompts for the type,
+     summary, and an optional Linear ticket ID + title, then writes the fragment.
+     Stage the resulting `changelog.d/+<slug>.<type>.md` in Tower alongside your
+     changes.
+   - **Manual:** create `changelog.d/+<slug>.<type>.md` directly in your editor.
+     If the change is tracked in Linear, start the content with the link:
+     `[FP-123: Ticket title](https://linear.app/flightpath/issue/FP-123) — summary.`
+
+   See [changelog.md](changelog.md).
 
 > Tip: keep a terminal open for `cscan changelog`; do staging/committing in Tower
 > if you prefer the GUI. Both paths produce the same result.

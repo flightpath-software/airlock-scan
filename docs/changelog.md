@@ -16,21 +16,30 @@ Why fragments instead of generating from commit messages:
 The guided way (recommended):
 
 ```bash
-cscan changelog          # pick a type, enter a summary, optional issue/PR number
+cscan changelog          # pick a type, enter a summary, optional Linear ticket
 cscan changelog preview  # see how the unreleased section will render
 ```
 
-Or create one directly with towncrier:
+The helper prompts for an optional Linear ticket ID (e.g. `FP-123`) and title,
+then writes the link into the fragment content automatically:
+
+```
+[FP-123: Ticket title](https://linear.app/flightpath/issue/FP-123) — summary text.
+```
+
+**PyCharm / Tower users:** create the `.md` file directly in `changelog.d/` and
+write the link by hand using the same format. The filename must match
+`+<slug>.<type>.md` (e.g. `+osv-adapter.scanner.md`).
+
+Or create one directly with towncrier (no Linear link):
 
 ```bash
-# tied to issue/PR #123:
-uv run towncrier create -c "Add osv-scanner adapter" 123.scanner.md
-# not tied to an issue (orphan fragment):
 uv run towncrier create -c "Handle empty SARIF runs" +empty-sarif.fixed.md
 ```
 
 Fragments live in [`changelog.d/`](../changelog.d/) and are named
-`<issue-or-+slug>.<type>.md`.
+`+<slug>.<type>.md` (always orphan — the Linear link lives in the content, not
+the filename).
 
 ### Fragment types
 
