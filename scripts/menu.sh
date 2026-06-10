@@ -11,7 +11,10 @@ source "${ROOT}/scripts/lib/config.sh"
 while true; do
   ui_header "cscan — repo security scanner"
   choice="$(ui_choose "What would you like to do?" \
-    "Scan a repo" \
+    "Vet a repo (Tier-1 + Tier-2)" \
+    "Scan a repo (Tier-1 only)" \
+    "Quarantine review (Tier-2 only)" \
+    "Evaluate against corpus" \
     "Install / check tools" \
     "Configure shell" \
     "Doctor (env + OSV audit)" \
@@ -20,7 +23,12 @@ while true; do
     "Quit")"
 
   case "$choice" in
-    "Scan a repo")              bash "${ROOT}/scripts/scan.sh" || true ;;
+    "Vet a repo (Tier-1 + Tier-2)") bash "${ROOT}/scripts/vet.sh" || true ;;
+    "Scan a repo (Tier-1 only)")    bash "${ROOT}/scripts/scan.sh" || true ;;
+    "Quarantine review (Tier-2 only)")
+        t="$(ui_input "Path to the repo/dir to review")"
+        [ -n "$t" ] && ( cd "$ROOT" && uv run cscan-helper quarantine "$t" ) || true ;;
+    "Evaluate against corpus")  ( cd "$ROOT" && uv run cscan-helper eval ) || true ;;
     "Install / check tools")    bash "${ROOT}/scripts/install-tools.sh" || true ;;
     "Configure shell")          bash "${ROOT}/scripts/shell-setup.sh" || true ;;
     "Doctor (env + OSV audit)") bash "${ROOT}/scripts/doctor.sh" || true ;;
