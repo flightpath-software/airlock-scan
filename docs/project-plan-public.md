@@ -428,7 +428,11 @@ For **`main`**, **`staging`**, **`develop`** (tighten as you go up the chain):
   the gitleaks workflow).
 - **Code scanning (CodeQL)**: the committed `codeql.yml` populates the
   Code-scanning tab; confirm default setup isn't also enabled (avoid duplicate
-  analyses).
+  analyses). **Interim while private:** uploading CodeQL results needs Advanced
+  Security ("Code Security"), which is off on the private repo, so `codeql.yml`
+  ships with `continue-on-error: true` — it runs but does not block PRs. **Remove
+  that line at go-public** (code scanning is free on public repos) so CodeQL
+  becomes a hard, required check.
 
 ### 5.5 Actions permissions (Settings → Actions → General)
 - **Workflow permissions → Read repository contents** (least privilege); the two
