@@ -20,13 +20,6 @@ jobs:
   analyze:
     name: analyze (python)
     runs-on: ubuntu-latest
-    # INTERIM (remove at go-public): uploading code-scanning results requires GitHub
-    # "Code Security" (Advanced Security), which is not enabled on this private repo, so the
-    # upload step errors with a configuration error. CodeQL still builds the DB and runs the
-    # queries here; we just don't let that upload failure red every PR while private. Public
-    # repos get code scanning for free — DELETE this line once the repo is public (or once
-    # Advanced Security is enabled) so CodeQL is a hard gate again. See docs/project-plan-public.md §5.4.
-    continue-on-error: true
     permissions:
       security-events: write   # upload results to code scanning
       actions: read
@@ -50,3 +43,10 @@ jobs:
         uses: github/codeql-action/analyze@v3
         with:
           category: "/language:python"
+          # INTERIM (remove at go-public): uploading results to the code-scanning API requires
+          # GitHub "Code Security" (Advanced Security), which is OFF on this private repo — the
+          # upload otherwise fails with a configuration error and reds the check. `upload: false`
+          # still builds the DB and runs the queries; it just skips the send. Public repos get code
+          # scanning for FREE, so DELETE this line (default is upload) once the repo is public or
+          # Advanced Security is enabled, to make CodeQL a hard gate again. See project-plan-public.md §5.4.
+          upload: false
