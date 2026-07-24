@@ -1,0 +1,38 @@
+name: security
+
+# Supply-chain hygiene beyond CodeQL: dependency vulnerability scanning (pip-audit / OSV) and
+# Python SAST (Bandit). Runs on PRs, on push to the integration/release branches, and weekly so
+# new advisories are caught even without a push.
+
+on:
+  push:
+    branches: [main, develop, staging]
+  pull_request:
+    branches: [main, develop, staging]
+  schedule:
+    - cron: "41 4 * * 1"   # Mondays 04:41 UTC (off-peak, non-round minute)
+
+permissions:
+  contents: read
+
+jobs:
+  pip-audit:
+    name: pip-audit (dependency SCA)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Export locked dependencies
+        run: uv export --frozen --format requirements-txt --no-emit-project > requirements.txt
+      - name: Audit dependencies
+        run: uvx pip-audit -r requirements.txt
+
+  bandit:
+    name: bandit (Python SAST)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Run Bandit
+        # -ll reports Medium+ severity only. Suppressions are inline `# nosec <ID>` with a reason.
+        run: uvx bandit -r src -ll

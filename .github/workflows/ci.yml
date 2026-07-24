@@ -2,8 +2,10 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop, staging]
+  # `labeled`/`unlabeled` so toggling `skip-changelog` re-runs the guards without a new push.
   pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
 
 permissions:
   contents: read
@@ -18,6 +20,10 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
+      # The lockfile must stay in sync with pyproject's `exclude-newer` cooldown: `--locked` fails
+      # if `uv lock` would change anything, so a dependency bump lands as a reviewed lock diff.
+      - name: Lockfile in sync with the exclude-newer policy
+        run: uv lock --locked
       # --frozen: install exactly what's in uv.lock (reproducible; no re-resolution).
       - name: Sync
         run: uv sync --frozen
@@ -50,9 +56,10 @@ jobs:
         run: uv sync --frozen
       - name: Fetch base branch
         run: git fetch --no-tags origin "${{ github.base_ref }}"
-      # Fails the PR unless it adds a news fragment under changelog.d/
-      # (automatically skipped on release branches that edit CHANGELOG.md).
+      # Fails the PR unless it adds a news fragment under changelog.d/ — unless the
+      # `skip-changelog` label is applied (docs / CI / refactor / test-only PRs).
       - name: Changelog fragment present
+        if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip-changelog') }}
         run: uv run towncrier check --compare-with "origin/${{ github.base_ref }}"
       # Fails the PR if any commit message isn't a valid Conventional Commit.
       - name: Conventional Commits

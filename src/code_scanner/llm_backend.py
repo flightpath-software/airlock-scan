@@ -84,7 +84,7 @@ class OpenAICompatBackend:
             f"{self.base_url}/chat/completions", data=data, headers=headers, method="POST"
         )
         try:
-            with urllib.request.urlopen(req, timeout=self.timeout) as resp:  # noqa: S310
+            with urllib.request.urlopen(req, timeout=self.timeout) as resp:  # noqa: S310  # nosec B310 - operator-configured http(s) API base_url, not attacker-controlled input
                 body = json.loads(resp.read().decode("utf-8"))
         except urllib.error.HTTPError as exc:  # pragma: no cover - network path
             detail = exc.read().decode("utf-8", "replace")[:500]
