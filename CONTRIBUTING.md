@@ -51,8 +51,11 @@ feature/*  ──PR──▶  develop  ──PR──▶  staging  ──PR─�
 - **`staging` is the QA / release-candidate branch.** A maintainer promotes a vetted set of
   changes from `develop` to `staging` for testing before release (and, in future, for the
   network-isolated dynamic-analysis suite — see `docs/project-plan-public.md` §4.3).
-- **`main` is the protected production branch.** Only release PRs promoted from `staging` land on
-  `main`, where the release tag is cut. Never target a feature or bug-fix PR at `main`.
+- **`main` is the protected production branch.** Nothing lands on `main` except a **release PR**
+  (`release/X.Y.Z`, cut from `staging`) that carries the changelog-compile + version-bump commit;
+  merging that PR *is* the release, and `vX.Y.Z` is tagged on the resulting `main` commit. Never
+  target a feature or bug-fix PR at `main`. (The release PR is merged with a **merge commit, not a
+  squash**, so the tag stays on `main` — see the Releasing section.)
 - Cut branches from the current `develop`, named to match the commit convention below:
   `type/short-description` (e.g. `feat/yara-adapter`, `fix/canary-localize`, `docs/branching-model`).
 
@@ -142,12 +145,17 @@ not a hidden flag. Drop it once the 3-day window covers the version anyway.
 
 ## Releasing
 
-Releases are cut by a maintainer from `main`. towncrier compiles the fragments into `CHANGELOG.md`;
-commitizen computes and tags the version (keeping `pyproject.toml` and `uv.lock` in sync):
+"Cutting a release" is a **version ceremony**, not a branch promotion: towncrier compiles the
+`changelog.d/` fragments into `CHANGELOG.md`, and commitizen bumps + tags the version (keeping
+`pyproject.toml`, `src/code_scanner/__init__.py`, and `uv.lock` in sync). A maintainer does it on a
+`release/X.Y.Z` branch cut from `staging`, then merges that branch into `main` via a **merge-commit
+PR** — the merge is how the release reaches the protected `main`:
 
 ```bash
-cscan release            # interactive (confirms each step)
-git push --follow-tags   # publish the bump commit + tag
+git switch -c release/X.Y.Z origin/staging   # freeze the QA'd candidate
+cscan release                                # changelog → bump → commit → tag vX.Y.Z (does NOT push)
+git push -u origin release/X.Y.Z             # open a PR release/X.Y.Z -> main, merge (no squash)
+git fetch origin main && git push origin vX.Y.Z   # publish the tag once its commit is on main
 ```
 
 See the [`release` skill](.claude/skills/release/SKILL.md) and the "Releasing" section of

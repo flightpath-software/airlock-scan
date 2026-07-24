@@ -114,6 +114,11 @@ Notes:
 - Releasing requires at least one version-bumping commit (`feat`/`fix`/…) since
   the last tag, and a clean working tree (uncommitted changes get swept into the
   bump commit).
+- **On the protected branch model, you can't push the bump straight to `main`.**
+  Run the ceremony above on a `release/X.Y.Z` branch cut from `staging`, then land it
+  on `main` via a **merge-commit** PR (not squash — that would strand the tag) and
+  push `vX.Y.Z` after the merge. Full runbook: [`CONTRIBUTING.md`](CONTRIBUTING.md)
+  and the [`release` skill](.claude/skills/release/SKILL.md).
 - The first stable cut is planned as `1.0.0` (drop `major_version_zero`) — see
   [`docs/project-plan.md`](docs/project-plan.md) §8.1.
 
