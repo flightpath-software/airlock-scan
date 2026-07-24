@@ -119,8 +119,13 @@ Notes:
 
 ## House rules
 
-- Develop on a feature branch; never force a push to `main`.
+- **Branch model:** `develop` (integration, the default branch) → `staging` (QA) →
+  `main` (production/releases). Cut `type/short-description` branches off `develop`
+  and open PRs against `develop`; never force-push a protected branch. See
+  [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`docs/project-plan-public.md`](docs/project-plan-public.md).
 - Keep the deterministic tier **authoritative**; the LLM tier is advisory and
-  must never clear a Tier-1 finding (see project plan §3, `gate.py`).
+  must never clear a Tier-1 finding (see project plan §3, `gate.py`, and
+  [`docs/adr/0001-deterministic-tier-authoritative.md`](docs/adr/0001-deterministic-tier-authoritative.md)).
 - Reports stay **local to the user** (`~/cscan/`), never written into the scanned
-  repo and never sent off-machine except a configured Tier-2 LLM call.
+  repo and never sent off-machine except a configured Tier-2 LLM call (see
+  [`docs/adr/0002-local-only-reports.md`](docs/adr/0002-local-only-reports.md)).
