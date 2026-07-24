@@ -398,35 +398,51 @@ once so their check names are selectable.
 
 ### 5.2 Branch protection via **Rulesets** (Settings → Rules → Rulesets)
 Create one ruleset per branch (or a single ruleset targeting all three with
-branch-name conditions), matching memex's "no bypass for anyone" posture:
+branch-name conditions), matching memex's "no bypass for anyone" posture.
 
-For **`main`**, **`staging`**, **`develop`** (tighten as you go up the chain):
+**Common to `develop`, `staging`, and `main`:**
 - **Restrict deletions** and **Block force-pushes**: on.
 - **Require a pull request before merging**: on.
-  - Required approvals: **1** (raise for `main`).
   - **Require review from Code Owners**: on (needs §3.3 `CODEOWNERS`).
   - **Dismiss stale approvals on new commits**: on.
-- **Require status checks to pass**: on — select the checks once they've run once:
-  `lint + test`, `changelog + commit guard` (or the split `changelog` job),
-  `analyze (python)` (CodeQL), `pip-audit`, `bandit`, `gitleaks scan`.
-  - **Require branches to be up to date before merging**: on.
-- **Require linear history**: on for **`develop`/`staging`** (pairs with squash-only
-  merging). **Leave it OFF for `main`** — the release PR is merged as a merge commit
-  to preserve the tagged bump commit's SHA (§4.1), and linear-history would forbid
-  that merge commit.
-- **Do not allow bypass** (no bypass actors) — matches memex's "no bypass for
-  anyone, maintainers included."
-- For **`main`** additionally consider **Require signed commits** and a tag
-  ruleset protecting `v*` tags from deletion/force-update.
+- **Require status checks to pass** + **Require branches to be up to date before
+  merging**: on — select the checks once they've run once (their names, from this
+  PR's runs): `lint + test`, `changelog + commit guard`, `analyze (python)` (CodeQL),
+  `pip-audit (dependency SCA)`, `bandit (Python SAST)`, `scan` (gitleaks). *(CodeQL
+  passes today but does not upload while private — §5.4; it becomes a meaningful gate
+  at go-public.)*
+- **Do not allow bypass** (no bypass actors) — no exemption for maintainers.
 
-### 5.3 Merge settings (Settings → General → Pull Requests)
-- **Allow squash merging**: on, and make it the **default** — feature/promotion PRs
-  into `develop`/`staging` are one clean commit each.
-- **Allow merge commits**: on — **kept enabled specifically for the release PR into
-  `main`**, which must be a merge commit so the `vX.Y.Z` tag stays reachable (§4.1).
-  Discipline: reviewers pick "Squash and merge" for everything except a
-  `release/X.Y.Z → main` PR, where they pick "Create a merge commit."
-- **Allow rebase merging**: off (rewrites SHAs — same tag-stranding hazard).
+**Per-branch differences — this is where the merge-commit decision is enforced:**
+
+| Ruleset setting | `develop` | `staging` | `main` |
+|---|---|---|---|
+| **Require a PR → Allowed merge methods** | **Squash** only | **Squash** only | **Merge** only |
+| **Require linear history** | on | on | **off** |
+| **Required approvals** | 1 | 1 | 2 (suggested) |
+
+Why this exact split: the `release/X.Y.Z → main` PR must be merged as a **merge
+commit** so the `vX.Y.Z` tag stays reachable on `main` (§4.1). Setting `main`'s
+**Allowed merge methods = Merge** and turning **linear history off** on `main` is
+precisely what permits that. Restricting `develop`/`staging` to **Allowed merge
+methods = Squash** (with linear history **on**) keeps their history clean and makes an
+accidental merge commit there **impossible** — the ruleset rejects it. So the two
+per-branch rows above *are* the whole mechanism; the repo-wide toggles in §5.3 just
+have to make both methods available for the rulesets to choose from.
+
+- For **`main`** additionally consider **Require signed commits**, and a **tag
+  ruleset** protecting `v*` tags from deletion/force-update.
+
+### 5.3 Repo-wide merge settings (Settings → General → Pull Requests)
+These are global on/off switches; the per-branch **Allowed merge methods** in §5.2
+narrow them for each branch, so enabling a method here does **not** mean it's usable
+everywhere.
+- **Allow squash merging**: on, and set it as the repo **default** (feature/promotion
+  PRs into `develop`/`staging`).
+- **Allow merge commits**: on — required so `main`'s ruleset can offer the release
+  merge commit. Because the `develop`/`staging` rulesets restrict their PRs to squash,
+  enabling this globally does **not** let merge commits into those branches.
+- **Allow rebase merging**: off (rewrites SHAs → the same tag-stranding hazard).
 - **Automatically delete head branches**: on.
 
 ### 5.4 Security features (Settings → Code security and analysis)
@@ -555,7 +571,7 @@ Do it in this order — scaffolding is reversible; flatten and go-public are not
 **Phase C — GitHub settings (admin)**
 - [ ] C1. Set default branch to `develop`. (§5.1)
 - [ ] C2. Configure merge settings: squash as the default; keep merge commits enabled for the release PR into `main`; rebase off; auto-delete head branches. (§5.3)
-- [ ] C3. Create rulesets for `main`/`staging`/`develop` (required checks, CODEOWNERS review, no bypass, block force-push; linear history on `develop`/`staging` only — `main` allows the release merge commit). (§5.2)
+- [ ] C3. Create rulesets for `main`/`staging`/`develop` (required checks, CODEOWNERS review, no bypass, block force-push). **Per-branch:** Allowed merge methods = Squash for `develop`/`staging`, Merge for `main`; Require linear history on `develop`/`staging` only (off on `main`, so the release merge commit is allowed). (§5.2)
 - [ ] C4. Enable private vuln reporting, Dependabot alerts+updates, secret scanning + push protection, CodeQL tab. (§5.4)
 - [ ] C5. Set Actions to least-privilege + fork-PR approval. (§5.5)
 - [ ] C6. Create `skip-changelog` + `dependencies` labels. (§5.6)
