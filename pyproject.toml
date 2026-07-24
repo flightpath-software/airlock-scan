@@ -4,7 +4,8 @@ version = "0.4.0"
 description = "Shell-first, uv-native toolkit to scan repositories for supply-chain and injection attacks before install or before granting LLM access."
 readme = "README.md"
 requires-python = ">=3.12"
-license = { text = "TODO" } # distribution deferred; choose a license before publishing
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 authors = [{ name = "Sean Howard" }]
 keywords = [
     "security",

@@ -1,0 +1,25 @@
+version: 2
+updates:
+  # Python dependencies (uv lockfile) — security + version updates.
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    # Auto-label so Dependabot PRs satisfy the changelog gate (a maintainer can still add a
+    # `security`/`changed` fragment for a notable bump).
+    labels: ["dependencies", "skip-changelog"]
+    commit-message:
+      prefix: "deps"
+
+  # Keep the GitHub Actions we pin (checkout, setup-uv, codeql-action, …) current.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels: ["dependencies", "skip-changelog"]
+    commit-message:
+      prefix: "ci"

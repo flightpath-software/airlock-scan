@@ -1,0 +1,52 @@
+name: codeql
+
+# Static analysis via GitHub CodeQL. Scoped to Python — the only CodeQL-supported language shipped
+# here (the rest of cscan is POSIX shell, which CodeQL does not analyze; shell is syntax-checked in
+# ci.yml). Results appear under the repo's Security → Code scanning tab.
+
+on:
+  push:
+    branches: [main, develop, staging]
+  pull_request:
+    branches: [main, develop, staging]
+  schedule:
+    # Weekly baseline scan so drift is caught even without a push.
+    - cron: "27 3 * * 1"   # Mondays 03:27 UTC (off-peak, non-round minute)
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: analyze (python)
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write   # upload results to code scanning
+      actions: read
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: python
+          # Default query suite is enough for the baseline; swap to
+          # `security-and-quality` later if you want broader (noisier) coverage.
+
+      # Python is interpreted — no build step needed; autobuild is a safe no-op.
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:python"
+          # INTERIM (remove at go-public): uploading results to the code-scanning API requires
+          # GitHub "Code Security" (Advanced Security), which is OFF on this private repo — the
+          # upload otherwise fails with a configuration error and reds the check. `upload: false`
+          # still builds the DB and runs the queries; it just skips the send. Public repos get code
+          # scanning for FREE, so DELETE this line (default is upload) once the repo is public or
+          # Advanced Security is enabled, to make CodeQL a hard gate again. See project-plan-public.md §5.4.
+          upload: false

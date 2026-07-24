@@ -1,0 +1,25 @@
+name: Feature request
+description: Suggest an enhancement or new capability (e.g. a new scanner adapter)
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / motivation
+      description: What are you trying to vet, and what's missing or hard today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What would you like to see? For a new scanner, name the tool and what class of finding it adds. Include alternatives you've considered.
+    validations:
+      required: false
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Anything else — links, prior art, and how it fits the two-tier (deterministic + advisory-LLM) pipeline. See docs/future-work.md for the deferred backlog.
+    validations:
+      required: false

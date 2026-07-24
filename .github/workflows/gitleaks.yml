@@ -1,0 +1,68 @@
+name: gitleaks
+
+on:
+  pull_request:
+  push:
+    branches: [main, develop, staging]
+  schedule:
+    - cron: "0 6 * * 1"   # weekly full-history sweep
+
+permissions:
+  contents: read          # read the repo
+  security-events: write  # upload SARIF (same-repo push/schedule only — see the upload step's guard)
+
+# One scan per ref: cancel a superseded PR scan, but let push/schedule scans run to completion.
+concurrency:
+  group: gitleaks-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
+        with:
+          fetch-depth: 0              # full history so push/schedule scans see every commit
+          persist-credentials: false  # this job never needs the token after checkout
+
+      - name: Install gitleaks (pinned + checksum-verified)
+        run: |
+          set -euo pipefail
+          VERSION=8.28.0
+          # Pin the artifact digest in-repo (obtained out-of-band), so a tampered release fails CI
+          # instead of being trusted via a checksums file fetched from that same release. Bump VERSION
+          # and SHA256 together — Dependabot does not track this inline pin.
+          SHA256=a65b5253807a68ac0cafa4414031fd740aeb55f54fb7e55f386acb52e6a840eb
+          curl -sSfL --retry 3 --retry-all-errors -O \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_linux_x64.tar.gz"
+          echo "${SHA256}  gitleaks_${VERSION}_linux_x64.tar.gz" | sha256sum -c -
+          tar -xzf "gitleaks_${VERSION}_linux_x64.tar.gz" -C /usr/local/bin gitleaks
+          gitleaks version
+
+      - name: Scan
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          # `gitleaks git` — the `detect` command is deprecated since 8.19. --redact keeps secret
+          # values out of logs/SARIF; a leak makes gitleaks exit non-zero, failing the job. Known or
+          # accepted findings are silenced via the auto-detected .gitleaksignore at the repo root.
+          # On a PR, scan only the commits it introduces (base..head) so a pre-existing finding in
+          # history can't red every open PR, and PRs stay fast; push/schedule scan the full history.
+          args=(git . --redact --report-format sarif --report-path gitleaks.sarif)
+          if [ "$EVENT" = "pull_request" ]; then
+            args+=("--log-opts=${BASE_SHA}..${HEAD_SHA}")
+          fi
+          gitleaks "${args[@]}"
+
+      - name: Upload SARIF to Security tab
+        # Only same-repo runs can write security events — a fork PR gets a read-only token, so an
+        # upload there would fail the check. Restrict the upload to push/schedule; the scan above
+        # still runs (and gates) on every PR. Skip if the scan produced no report.
+        if: always() && github.event_name != 'pull_request' && hashFiles('gitleaks.sarif') != ''
+        uses: github/codeql-action/upload-sarif@02c5e83432fe5497fd85b873b6c9f16a8578e1d9  # v3.37.0
+        with:
+          sarif_file: gitleaks.sarif
