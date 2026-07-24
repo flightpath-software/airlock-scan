@@ -29,7 +29,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           languages: python
           # Default query suite is enough for the baseline; swap to
@@ -37,10 +37,10 @@ jobs:
 
       # Python is interpreted — no build step needed; autobuild is a safe no-op.
       - name: Autobuild
-        uses: github/codeql-action/autobuild@v3
+        uses: github/codeql-action/autobuild@v4
 
       - name: Perform CodeQL analysis
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
         with:
           category: "/language:python"
           # INTERIM (remove at go-public): uploading results to the code-scanning API requires
