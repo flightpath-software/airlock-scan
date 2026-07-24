@@ -155,8 +155,13 @@ See [docs/commits.md](docs/commits.md).
   and on PRs guards that a changelog fragment exists (`towncrier check`) and that
   commit messages are valid (`cz check`).
 
+## License
+
+`code-scanner` is licensed under **Apache-2.0** — see [`LICENSE`](LICENSE). By
+contributing, you agree that your contributions are provided under that license
+(see [`CONTRIBUTING.md`](CONTRIBUTING.md)).
+
 ## TODO
 
-- Choose and add a `LICENSE` before any public distribution (currently `license = "TODO"`).
 - Populate custom `semgrep` rules under `config/semgrep/`.
 - Optional: add a CI step that self-scans this repo with `cscan`.
