@@ -30,5 +30,8 @@ evolution is part of the value.
 
 Copy the frontmatter shape of an existing ADR, give it the next number, set
 `status: accepted` (or `proposed` if still under discussion), and add a row to the
-table above. Keep it short: context, the decision, the alternatives, and the
-consequences.
+table above. **Keep the body to a single paragraph: the decision and the trade-off
+it settles — nothing else.** Record the alternatives you rejected as a `considering:`
+list in the frontmatter, not in prose. Do **not** write out the decision's impact, the
+work it creates, or what flows from it — that belongs in code, `VALIDATION.md`, or a
+project plan. A meandering ADR is one no one reads.
