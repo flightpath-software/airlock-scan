@@ -125,7 +125,7 @@ bump_message = "bump: $current_version \u2192 $new_version"
 [dependency-groups]
 dev = [
     "commitizen>=4.16.2",
-    "pytest>=9.0.3",
+    "pytest>=9.1.1",
     "ruff>=0.15.15",
     "towncrier>=25.8.0",
 ]
