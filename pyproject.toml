@@ -1,0 +1,131 @@
+[project]
+name = "code-scanner"
+version = "0.4.0"
+description = "Shell-first, uv-native toolkit to scan repositories for supply-chain and injection attacks before install or before granting LLM access."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{ name = "Sean Howard" }]
+keywords = [
+    "security",
+    "supply-chain",
+    "sast",
+    "secrets-scanning",
+    "trojan-source",
+    "prompt-injection",
+]
+dependencies = [
+    "rich>=15.0.0",
+]
+# NOTE: runtime dependencies are managed with `uv add` (never hand-edited),
+# so pyproject.toml and uv.lock stay in sync.
+
+[project.scripts]
+# Thin Python helper invoked by the shell layer (e.g. `uv run cscan-helper ...`).
+# The primary user-facing command is the gum launcher at `bin/cscan`.
+cscan-helper = "code_scanner.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.11.8,<0.12"]
+build-backend = "uv_build"
+
+[tool.uv]
+# --- Supply-chain cooldown -------------------------------------------------
+# Refuse to resolve any distribution younger than 3 days, to avoid pulling
+# freshly published (and not-yet-detected) malicious releases.
+#
+# Relative durations require uv >= 0.9.17. uv >= 0.11.8 writes a sentinel
+# timestamp into uv.lock for relative spans, so the rolling window does not
+# churn the lockfile or cause merge conflicts.
+required-version = ">=0.11.8"
+exclude-newer = "3 days"
+#
+# Emergency escape hatch: exempt a single package from the cooldown to take an
+# urgent security fix immediately. Accepts `false` (no cutoff) or a specific
+# RFC 3339 timestamp. Example:
+#   exclude-newer-package = { somepkg = false }
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["src", "tests"]
+
+# --- Changelog (human-written fragments -> Keep a Changelog markdown) -------
+[tool.towncrier]
+directory = "changelog.d"
+filename = "CHANGELOG.md"
+start_string = "<!-- towncrier release notes start -->\n"
+underlines = ["", "", ""]          # markdown: no RST underlines
+title_format = "## [{version}] - {project_date}"
+issue_format = "#{issue}"
+# `.gitkeep` is ignored automatically (towncrier >= 24.8).
+
+[[tool.towncrier.type]]
+directory = "security"
+name = "Security"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "added"
+name = "Added"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "changed"
+name = "Changed"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "fixed"
+name = "Fixed"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "scanner"
+name = "Scanners"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "deprecated"
+name = "Deprecated"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "removed"
+name = "Removed"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "docs"
+name = "Documentation"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "misc"
+name = "Misc"
+showcontent = false
+
+# --- Version bump + tagging (Conventional Commits) -------------------------
+[tool.commitizen]
+name = "cz_conventional_commits"
+# The `uv` provider keeps both [project.version] and uv.lock in sync.
+version_provider = "uv"
+version_scheme = "pep440"
+tag_format = "v$version"
+# Pre-1.0: breaking changes bump MINOR (0.x), not MAJOR.
+major_version_zero = true
+# towncrier owns CHANGELOG.md, so commitizen must not also write it.
+update_changelog_on_bump = false
+version_files = [
+    "src/code_scanner/__init__.py:__version__",
+]
+bump_message = "bump: $current_version \u2192 $new_version"
+
+[dependency-groups]
+dev = [
+    "commitizen>=4.16.2",
+    "pytest>=9.0.3",
+    "ruff>=0.15.15",
+    "towncrier>=25.8.0",
+]

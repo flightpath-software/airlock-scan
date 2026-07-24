@@ -1,0 +1,24 @@
+# Normalize line endings: treat everything as text with LF in the repo, and let
+# Git auto-detect binaries. This keeps shell scripts and Python LF-clean across
+# platforms (a CRLF in bin/cscan or a scanner adapter would break execution).
+* text=auto eol=lf
+
+# Shell + Python must always be LF regardless of a contributor's core.autocrlf.
+*.sh    text eol=lf
+bin/*   text eol=lf
+*.py    text eol=lf
+
+# Config / data / docs
+*.toml  text eol=lf
+*.json  text eol=lf
+*.yaml  text eol=lf
+*.yml   text eol=lf
+*.md    text eol=lf
+*.cfg   text eol=lf
+
+# Explicit binaries (never normalize / diff as text)
+*.png   binary
+*.jpg   binary
+*.gif   binary
+*.ico   binary
+*.pdf   binary

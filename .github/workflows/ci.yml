@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop, staging]
+  # `labeled`/`unlabeled` so toggling `skip-changelog` re-runs the guards without a new push.
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: lint + test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      # The lockfile must stay in sync with pyproject's `exclude-newer` cooldown: `--locked` fails
+      # if `uv lock` would change anything, so a dependency bump lands as a reviewed lock diff.
+      - name: Lockfile in sync with the exclude-newer policy
+        run: uv lock --locked
+      # --frozen: install exactly what's in uv.lock (reproducible; no re-resolution).
+      - name: Sync
+        run: uv sync --frozen
+      - name: Lint (ruff)
+        run: uv run ruff check .
+      - name: Test (pytest)
+        run: uv run pytest -q
+      - name: Shell syntax check
+        run: |
+          shopt -s nullglob
+          for f in bin/cscan scripts/*.sh scripts/lib/*.sh scanners/*.sh; do
+            [ -f "$f" ] || continue
+            bash -n "$f"
+          done
+
+  guards:
+    name: changelog + commit guard
+    runs-on: ubuntu-latest
+    # These guards only make sense for the diff a PR introduces.
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0          # full history so we can diff against the base
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: Sync
+        run: uv sync --frozen
+      - name: Fetch base branch
+        run: git fetch --no-tags origin "${{ github.base_ref }}"
+      # Fails the PR unless it adds a news fragment under changelog.d/ — unless the
+      # `skip-changelog` label is applied (docs / CI / refactor / test-only PRs).
+      - name: Changelog fragment present
+        if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip-changelog') }}
+        run: uv run towncrier check --compare-with "origin/${{ github.base_ref }}"
+      # Fails the PR if any commit message isn't a valid Conventional Commit.
+      - name: Conventional Commits
+        run: uv run cz check --rev-range "origin/${{ github.base_ref }}..HEAD"

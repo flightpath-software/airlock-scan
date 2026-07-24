@@ -1,0 +1,3 @@
+# Drop custom semgrep rule files (*.yml / *.yaml) here.
+# When this directory contains rules, scanners/semgrep.sh uses `--config <this dir>`
+# instead of `--config auto`.

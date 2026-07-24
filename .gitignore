@@ -1,0 +1,122 @@
+# ---------------------------------------------------------------------------
+# code-scanner .gitignore
+# Combined templates: macOS + Windows + JetBrains/PyCharm + Python
+# ---------------------------------------------------------------------------
+
+# === Project-specific ======================================================
+# Per-target scan results written by `cscan` (kept out of this repo).
+.cscan/
+**/.cscan/
+# Aggregated reports / scratch output.
+/reports/
+*.sarif
+*.sarif.json
+
+# === Python ================================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+# Anchored to repo root: these are Python build/venv dirs. Without the leading
+# slash, "lib/" also matched scripts/lib/ and silently excluded the shell libs.
+/lib/
+/lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Unit test / coverage
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Type checkers / linters
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+.ruff_cache/
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# uv
+# (uv.lock IS committed on purpose for reproducible, vetted resolutions.)
+.uv/
+
+# === JetBrains / PyCharm ===================================================
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+.idea_modules/
+# JetBrains-based IDEs sometimes store per-user shelf/workspace data:
+.idea/**/workspace.xml
+.idea/**/tasks.xml
+.idea/**/usage.statistics.xml
+.idea/**/dictionaries
+.idea/**/shelf
+
+# === macOS =================================================================
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# === Windows ===============================================================
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk

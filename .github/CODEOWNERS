@@ -1,0 +1,13 @@
+# Code owners for code-scanner.
+#
+# When branch protection enables "Require review from Code Owners", a PR touching
+# a matching path needs an approving review from one of the listed owners.
+# Any single listed owner satisfies the requirement (not all of them), and an
+# owner must have write access for their review to count. Add teammates here as
+# they join — last matching rule wins, so put narrower rules below the global one.
+#
+# NOTE: external/outside collaborators (e.g. co-op contributors) are intentionally
+# NOT listed here — their PRs must always be approved by a maintainer below.
+
+# Global default — every change needs a maintainer review.
+*   @passitalong @snorith

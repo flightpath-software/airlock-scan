@@ -1,0 +1,1 @@
+Wire the pipeline commands into the `cscan` launcher: `cscan vet`, `cscan quarantine`, and `cscan eval` now work from the single launcher (and the interactive gum menu), so you no longer need to call `scripts/*.sh` or `cscan-helper` directly.

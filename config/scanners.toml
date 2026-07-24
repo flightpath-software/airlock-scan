@@ -1,0 +1,53 @@
+# Declarative manifest of the scanners cscan orchestrates.
+#
+# This file is human-facing documentation of the registry. The functional source
+# of truth is each adapter script in `scanners/<id>.sh` (which implements
+# `name | detect | install | run`). Keep them in sync.
+#
+# Global supply-chain policy (enforced via uv): never resolve a distribution
+# younger than 3 days. See [tool.uv] in pyproject.toml and scripts/shell-setup.sh.
+
+[defaults]
+# Severity gate applied by the Python helper; a finding at/above this fails the run.
+gate = "high"
+# Scanners run unless the user narrows the selection.
+enabled = ["gitleaks", "semgrep", "osv-scanner", "guarddog", "heckler"]
+
+[scanners.gitleaks]
+detects = "secrets / credentials"
+install = "brew"
+runtime = "binary"
+output = "sarif"
+
+[scanners.semgrep]
+detects = "SAST / pattern rules"
+install = "uvx"          # ephemeral; honors UV_EXCLUDE_NEWER cooldown
+runtime = "python"
+output = "sarif"
+
+[scanners.osv-scanner]
+detects = "vulnerable dependencies (CVEs)"
+install = "brew"
+runtime = "binary"
+output = "sarif"
+
+[scanners.guarddog]
+detects = "malicious PyPI/npm packages"
+install = "uvx"
+runtime = "python"
+output = "sarif"
+# Scans dependency manifests found in the target (requirements*.txt, package.json).
+
+[scanners.heckler]
+detects = "invisible-unicode / trojan-source / Glassworm / tag-char prompt-injection"
+install = "uvx"
+runtime = "python"
+output = "sarif"
+# Set CSCAN_HECKLER_SCAN_DEPS=1 to also scan vendored dependency directories.
+
+[scanners.anti-trojan-source]
+detects = "trojan-source / confusable unicode (second opinion)"
+install = "npx"          # npm/Node, fetched on demand; user-provided
+runtime = "node"
+output = "json"
+optional = true          # off by default

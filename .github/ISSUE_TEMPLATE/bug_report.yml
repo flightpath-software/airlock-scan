@@ -1,0 +1,37 @@
+name: Bug report
+description: Report a defect in code-scanner (cscan)
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. **Security vulnerabilities do not go here** — report them privately via
+        [GitHub's private vulnerability reporting](https://github.com/flightpath-software/code-scanner/security/advisories/new).
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: The `cscan` command (or `cscan-helper` subcommand) and target you ran, and the output you saw.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version / commit
+      description: The `code-scanner` version or the commit SHA you're on.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, `uv --version`, Python version, and which external scanners are installed (`scripts/doctor.sh`).
+    validations:
+      required: false

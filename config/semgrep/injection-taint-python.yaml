@@ -1,0 +1,93 @@
+# cscan custom Semgrep taint rules (Python).
+#
+# Strategy A, Tier 1: deterministic source -> sink dataflow. None of this runs
+# the target. Sources are untrusted inputs (env, argv, stdin, file/network
+# reads); sinks are dangerous operations (shell exec, code eval, outbound
+# exfiltration). Findings are normalized via the SARIF "error" level -> HIGH.
+rules:
+  - id: cscan-untrusted-input-to-shell
+    mode: taint
+    languages: [python]
+    severity: ERROR
+    message: >-
+      Untrusted input flows into shell/command execution (possible command
+      injection). Untrusted data must never reach a shell sink.
+    metadata:
+      category: security
+      cwe: "CWE-78: OS Command Injection"
+      cscan: taint
+    pattern-sources:
+      - pattern-either:
+          - pattern: os.environ.get(...)
+          - pattern: os.environ[...]
+          - pattern: os.getenv(...)
+          - pattern: sys.argv
+          - pattern: input(...)
+          - pattern: sys.stdin.read(...)
+          - pattern: open(...).read(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: os.system(...)
+              - pattern: os.popen(...)
+              - pattern: subprocess.run(...)
+              - pattern: subprocess.call(...)
+              - pattern: subprocess.check_output(...)
+              - pattern: subprocess.Popen(...)
+
+  - id: cscan-untrusted-input-to-eval
+    mode: taint
+    languages: [python]
+    severity: ERROR
+    message: >-
+      Untrusted input flows into dynamic code evaluation (possible code
+      injection via eval/exec/compile).
+    metadata:
+      category: security
+      cwe: "CWE-94: Code Injection"
+      cscan: taint
+    pattern-sources:
+      - pattern-either:
+          - pattern: os.environ.get(...)
+          - pattern: os.environ[...]
+          - pattern: os.getenv(...)
+          - pattern: sys.argv
+          - pattern: input(...)
+          - pattern: sys.stdin.read(...)
+          - pattern: open(...).read(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: eval(...)
+              - pattern: exec(...)
+              - pattern: compile(...)
+              - pattern: __import__(...)
+
+  - id: cscan-secret-or-file-exfiltration
+    mode: taint
+    languages: [python]
+    severity: ERROR
+    message: >-
+      Local secrets/file contents or environment flow into an outbound network
+      call (possible exfiltration).
+    metadata:
+      category: security
+      cwe: "CWE-200: Exposure of Sensitive Information"
+      cscan: taint
+    pattern-sources:
+      - pattern-either:
+          - pattern: os.environ
+          - pattern: os.environ.get(...)
+          - pattern: os.environ[...]
+          - pattern: os.getenv(...)
+          - pattern: open(...).read(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: requests.post(...)
+              - pattern: requests.get(...)
+              - pattern: requests.put(...)
+              - pattern: urllib.request.urlopen(...)
+              - pattern: httpx.post(...)
+              - pattern: httpx.get(...)
+              - pattern: socket.socket(...).sendall(...)

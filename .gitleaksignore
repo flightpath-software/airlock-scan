@@ -1,0 +1,6 @@
+# gitleaks allowlist — one finding fingerprint per line (format: <commit>:<path>:<rule>:<line>).
+#
+# This file is intentionally empty. The evaluation fixtures under corpus/ contain synthetic
+# prompt-injection text, not real credentials, and exfil targets use reserved *.example domains —
+# so they should not trip gitleaks. If a fixture ever produces a false positive, add its fingerprint
+# here (gitleaks prints the exact fingerprint on a finding) with a comment explaining why it's benign.
