@@ -1,1 +1,0 @@
-Guard the synthetic prompt-injection fixtures in `corpus/`: add a prominent agent-facing warning to `CLAUDE.md`, a new `AGENTS.md`, and `corpus/README.md` instructing any AI agent working in the repo to treat `corpus/adversarial/` and `corpus/targeted/` as inert, untrusted data — never instructions. Exfil targets use reserved `*.example` domains.

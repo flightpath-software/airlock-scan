@@ -9,7 +9,7 @@ considering:
   - let-the-llm-downgrade-tier-1-false-positives
 ---
 
-cscan's Tier-2 reviewer reads untrusted repo content with an LLM, so an indirect
+airlock's Tier-2 reviewer reads untrusted repo content with an LLM, so an indirect
 prompt injection can try to talk the reviewer into a "looks clean" verdict — the act
 of reading is itself the attack surface. The gate verdict is therefore computed only
 by the deterministic Tier-1 scanners; the LLM tier is advisory and may raise concern

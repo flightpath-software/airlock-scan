@@ -2,10 +2,10 @@
 # Detection / installation helpers shared by install-tools.sh and doctor.sh.
 # Source after common.sh + config.sh.
 
-: "${CSCAN_ROOT:?source scripts/lib/common.sh first}"
+: "${AIRLOCK_ROOT:?source scripts/lib/common.sh first}"
 
 # Pick a python interpreter for small helper queries (OSV, version math).
-_cscan_python() {
+_airlock_python() {
   if have uv; then printf 'uv run --no-project python'; return; fi
   if have python3; then printf 'python3'; return; fi
   printf 'python'

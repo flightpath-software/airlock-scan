@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# airlock — gum-driven launcher for the repo security scanner.
+#
+#   airlock                      open the interactive menu
+#   airlock scan [<target>] [..] scan a repo/dir (Tier-1 scanners only)
+#   airlock vet [<target>] [..]  Tier-1 scanners + Tier-2 LLM review -> one report
+#   airlock quarantine <dir> [..] Tier-2 quarantined LLM review only
+#   airlock eval [--fake|..]     evaluate the reviewer against the labeled corpus
+#   airlock install [--yes]      detect / install scanners
+#   airlock setup                configure your shell (PATH + cooldown env)
+#   airlock doctor               environment + OSV supply-chain audit
+#   airlock changelog [preview]  create a news fragment (or preview the draft)
+#   airlock release [--yes]      build changelog, bump version, tag
+#   airlock report <dir> [..]    run the Python helper directly on a results dir
+#   airlock -h | --help          show this help
+set -uo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=/dev/null
+source "${ROOT}/scripts/lib/common.sh"
+# shellcheck source=/dev/null
+source "${ROOT}/scripts/lib/config.sh"
+
+usage() { sed -n '2,15p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; }
+
+cmd="${1:-menu}"
+[ "$#" -gt 0 ] && shift || true
+
+case "$cmd" in
+  menu)               exec bash "${ROOT}/scripts/menu.sh" ;;
+  scan)               exec bash "${ROOT}/scripts/scan.sh" "$@" ;;
+  vet)                exec bash "${ROOT}/scripts/vet.sh" "$@" ;;
+  quarantine|review)  ( cd "$ROOT" && exec uv run airlock-helper quarantine "$@" ) ;;
+  eval)               ( cd "$ROOT" && exec uv run airlock-helper eval "$@" ) ;;
+  install|install-tools) exec bash "${ROOT}/scripts/install-tools.sh" "$@" ;;
+  setup|shell-setup)  exec bash "${ROOT}/scripts/shell-setup.sh" "$@" ;;
+  doctor)             exec bash "${ROOT}/scripts/doctor.sh" "$@" ;;
+  changelog|ch)       exec bash "${ROOT}/scripts/changelog.sh" "$@" ;;
+  release)            exec bash "${ROOT}/scripts/release.sh" "$@" ;;
+  report)             ( cd "$ROOT" && exec uv run airlock-helper report "$@" ) ;;
+  -h|--help|help)     usage ;;
+  *)                  log_err "unknown command: ${cmd}"; echo; usage; exit 2 ;;
+esac

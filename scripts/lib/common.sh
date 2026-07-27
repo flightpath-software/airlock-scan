@@ -1,11 +1,11 @@
 # shellcheck shell=bash
-# Shared helpers for the cscan shell layer.
+# Shared helpers for the airlock shell layer.
 # Source this file; it defines functions/vars and does not run anything on its own.
 
 # Resolve the repo root from this library's location ($ROOT/scripts/lib/common.sh).
-CSCAN_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CSCAN_ROOT="$(cd "${CSCAN_LIB_DIR}/../.." && pwd)"
-export CSCAN_ROOT
+AIRLOCK_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+AIRLOCK_ROOT="$(cd "${AIRLOCK_LIB_DIR}/../.." && pwd)"
+export AIRLOCK_ROOT
 
 # --- capability checks -----------------------------------------------------
 have() { command -v "$1" >/dev/null 2>&1; }

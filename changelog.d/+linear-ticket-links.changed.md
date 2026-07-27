@@ -1,1 +1,0 @@
-`cscan changelog` now prompts for an optional Linear ticket ID and title, prepending a `[FP-XXX: Title](url)` link to the fragment content. GUI users (Tower, PyCharm) can write the same format by hand in `changelog.d/+slug.type.md`. Fragment filenames are always orphan slugs — the Linear link lives in the content, not the filename.

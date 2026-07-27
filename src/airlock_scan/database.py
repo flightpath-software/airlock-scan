@@ -1,10 +1,10 @@
 """Derived SQLite index over a run directory.
 
 The index is a *cache*, never the source of truth: it is built entirely from the
-files written by :mod:`code_scanner.store`, and the contract (CI-tested) is that
+files written by :mod:`airlock_scan.store`, and the contract (CI-tested) is that
 deleting it and running :func:`rebuild_index` reproduces a **byte-identical**
 database. That gives a clean sharing story — hand someone a run directory and
-they reconstruct the queryable index locally with ``cscan index rebuild``.
+they reconstruct the queryable index locally with ``airlock index rebuild``.
 
 Build determinism is achieved by: a fixed page size, a single write transaction,
 no AUTOINCREMENT (so no ``sqlite_sequence``), and inserting every table's rows in
@@ -17,7 +17,7 @@ import json
 import sqlite3
 from pathlib import Path
 
-from code_scanner.store import RunStore
+from airlock_scan.store import RunStore
 
 SCHEMA = """
 CREATE TABLE runs (
@@ -28,7 +28,7 @@ CREATE TABLE runs (
     gate           TEXT,
     backend        TEXT,
     model          TEXT,
-    cscan_version  TEXT
+    airlock_version  TEXT
 );
 CREATE TABLE static_findings (
     id       INTEGER PRIMARY KEY,
@@ -121,7 +121,7 @@ def build_index(store: RunStore, db_path: Path) -> Path:
                     manifest.get("gate"),
                     manifest.get("backend"),
                     manifest.get("model"),
-                    manifest.get("cscan_version"),
+                    manifest.get("airlock_version"),
                 ),
             )
             conn.executemany(

@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from code_scanner.findings import Finding, Severity
-from code_scanner.gate import GateVerdict, decide
+from airlock_scan.findings import Finding, Severity
+from airlock_scan.gate import GateVerdict, decide
 
 
 def _finding(sev: Severity, tool: str = "semgrep") -> Finding:

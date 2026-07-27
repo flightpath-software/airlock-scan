@@ -1,4 +1,4 @@
-# Canary tripwires — how cscan detects injection *attempts*
+# Canary tripwires — how airlock detects injection *attempts*
 
 This document explains the canary subsystem: what it is, why it works, how it
 fingerprints the harness an attack was tailored for, and — importantly — **how
@@ -10,7 +10,7 @@ formal spec); this page is the readable "why".
 
 ## The problem it solves
 
-cscan's deterministic tier (gitleaks, semgrep, osv-scanner, guarddog, heckler)
+airlock's deterministic tier (gitleaks, semgrep, osv-scanner, guarddog, heckler)
 is authoritative and never runs the target — so it cannot be prompt-injected.
 But it can't *understand* content. To catch overt/hidden injection text and
 suspicious logic, we add an advisory LLM reviewer. That reviewer must read
@@ -131,4 +131,4 @@ before the call, and `provider = "local"` keeps sensitive targets fully offline.
 4. Then `needs-review`.
 
 The install decision is always made by a human, **outside** the quarantine,
-reading the report from the user-local store (default `~/cscan/`).
+reading the report from the user-local store (default `~/airlock/`).

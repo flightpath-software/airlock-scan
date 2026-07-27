@@ -23,7 +23,7 @@ case "$cmd" in
     target="${1:?run requires <target>}"; out="${2:?run requires <out_dir>}"
     out_file="${out}/heckler.sarif"
     args=(--format sarif)
-    [ "${CSCAN_HECKLER_SCAN_DEPS:-0}" = "1" ] && args+=(--scan-deps)
+    [ "${AIRLOCK_HECKLER_SCAN_DEPS:-0}" = "1" ] && args+=(--scan-deps)
     uvx heckler "${args[@]}" "$target" >"$out_file" 2>/dev/null || true
     [ -s "$out_file" ] && echo "$out_file"
     ;;

@@ -1,6 +1,6 @@
 """Thin command-line entry point for the Python helper.
 
-This is invoked by the shell layer, e.g. ``uv run cscan-helper report <dir> --gate high``.
+This is invoked by the shell layer, e.g. ``uv run airlock-helper report <dir> --gate high``.
 It deliberately stays small: parse args, load+merge findings, render, and exit with a code
 the shell can branch on.
 
@@ -17,18 +17,18 @@ import argparse
 import sys
 from pathlib import Path
 
-from code_scanner import __version__
-from code_scanner.findings import Severity
-from code_scanner.parsers import load_results_dir
-from code_scanner.report import build_report, render
+from airlock_scan import __version__
+from airlock_scan.findings import Severity
+from airlock_scan.parsers import load_results_dir
+from airlock_scan.report import build_report, render
 
 _GATE_CHOICES = ["critical", "high", "medium", "low", "info"]
 
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="cscan-helper",
-        description="Parse, merge and gate scanner output for the cscan toolkit.",
+        prog="airlock-helper",
+        description="Parse, merge and gate scanner output for the airlock toolkit.",
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -40,7 +40,7 @@ def _build_parser() -> argparse.ArgumentParser:
     report.add_argument(
         "results_dir",
         type=Path,
-        help="Directory containing scanner output (e.g. <target>/.cscan).",
+        help="Directory containing scanner output (e.g. <target>/.airlock).",
     )
     report.add_argument(
         "--gate",
@@ -54,15 +54,15 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Emit machine-readable JSON instead of a table.",
     )
 
-    # ingest — normalize Tier-1 scanner output into a user-local ~/cscan run.
+    # ingest — normalize Tier-1 scanner output into a user-local ~/airlock run.
     ingest = sub.add_parser(
         "ingest",
-        help="Ingest scanner output into a ~/cscan run (report.json + report.md + index).",
+        help="Ingest scanner output into a ~/airlock run (report.json + report.md + index).",
     )
     ingest.add_argument(
         "results_dir",
         type=Path,
-        help="Directory containing scanner output (e.g. <target>/.cscan).",
+        help="Directory containing scanner output (e.g. <target>/.airlock).",
     )
     ingest.add_argument("--target", type=Path, default=None, help="Path that was scanned.")
     ingest.add_argument(
@@ -79,7 +79,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "rebuild",
         help="Rebuild <run-dir>/index.db from the run's files alone.",
     )
-    index_rebuild.add_argument("run_dir", type=Path, help="A cscan run directory.")
+    index_rebuild.add_argument("run_dir", type=Path, help="A airlock run directory.")
 
     # canary — inspect the inert decoy tool registry and harness attribution.
     canary = sub.add_parser("canary", help="Inspect canary tripwires / harness fingerprinting.")
@@ -130,7 +130,7 @@ def _build_parser() -> argparse.ArgumentParser:
     # vet — the unified run: merge Tier-1 scanner output + Tier-2 quarantine.
     vet = sub.add_parser(
         "vet",
-        help="Unified run: merge Tier-1 findings (--tier1-results) + Tier-2 into one ~/cscan run.",
+        help="Unified run: merge Tier-1 findings (--tier1-results) + Tier-2 into one ~/airlock run.",
     )
     vet.add_argument("target", type=Path, help="Directory to vet.")
     vet.add_argument(
@@ -194,11 +194,11 @@ def _cmd_report(args: argparse.Namespace) -> int:
 def _cmd_ingest(args: argparse.Namespace) -> int:
     from datetime import datetime, timezone
 
-    from code_scanner.config import load_config
-    from code_scanner.database import build_index
-    from code_scanner.gate import decide
-    from code_scanner.report import build_report, render, render_markdown
-    from code_scanner.store import RunStore
+    from airlock_scan.config import load_config
+    from airlock_scan.database import build_index
+    from airlock_scan.gate import decide
+    from airlock_scan.report import build_report, render, render_markdown
+    from airlock_scan.store import RunStore
 
     findings, warnings = load_results_dir(args.results_dir)
     gate = Severity.parse(args.gate)
@@ -213,7 +213,7 @@ def _cmd_ingest(args: argparse.Namespace) -> int:
         gate=args.gate,
         backend="tier1",
         model="",
-        cscan_version=__version__,
+        airlock_version=__version__,
     )
     store.write_report(static_findings=[f.as_dict() for f in findings])
     store.report_md_path.write_text(
@@ -235,7 +235,7 @@ def _cmd_ingest(args: argparse.Namespace) -> int:
 
 
 def _cmd_index(args: argparse.Namespace) -> int:
-    from code_scanner.database import rebuild_index
+    from airlock_scan.database import rebuild_index
 
     if args.index_command == "rebuild":
         db_path = rebuild_index(args.run_dir)
@@ -247,13 +247,13 @@ def _cmd_index(args: argparse.Namespace) -> int:
 def _cmd_canary(args: argparse.Namespace) -> int:
     import json
 
-    from code_scanner.canary import attribute, build_canary_set
+    from airlock_scan.canary import attribute, build_canary_set
 
     if args.canary_command == "list":
         if args.harnesses:
             harnesses = tuple(args.harnesses)
         else:
-            from code_scanner.config import load_config
+            from airlock_scan.config import load_config
 
             harnesses = load_config().canary.harness_sets
         tools = build_canary_set(harnesses, include_agnostic=not args.no_agnostic)
@@ -282,14 +282,14 @@ def _resolve_backend(cfg, fake: bool):
     """Build the Tier-2 backend, or print an error and return None."""
     import os
 
-    from code_scanner.llm_backend import FakeBackend, from_config
+    from airlock_scan.llm_backend import FakeBackend, from_config
 
     if fake:
         return FakeBackend()
     api_key = os.environ.get(cfg.llm.api_key_env)
     if not api_key and cfg.llm.provider != "local":
         print(
-            f"cscan-helper: error: no API key in ${cfg.llm.api_key_env}. "
+            f"airlock-helper: error: no API key in ${cfg.llm.api_key_env}. "
             f"Set it, choose provider=local, or use --fake.",
             file=sys.stderr,
         )
@@ -301,10 +301,10 @@ def _file_cap_note(cfg) -> None:
     """Alert when the default file cap applies (each file is one LLM call)."""
     import os
 
-    if "CSCAN_LLM_MAX_FILES" not in os.environ:
+    if "AIRLOCK_LLM_MAX_FILES" not in os.environ:
         print(
             f"note: reviewing at most {cfg.llm.max_files} file(s) this run "
-            f"(default cap). Set CSCAN_LLM_MAX_FILES to review more.",
+            f"(default cap). Set AIRLOCK_LLM_MAX_FILES to review more.",
             file=sys.stderr,
         )
 
@@ -321,17 +321,17 @@ def _print_canary_lines(canary_events: list[dict]) -> None:
 
 
 def _cmd_quarantine(args: argparse.Namespace) -> int:
-    from code_scanner.canary import build_canary_set
-    from code_scanner.config import load_config
-    from code_scanner.database import build_index
-    from code_scanner.gate import decide
-    from code_scanner.quarantine import QuarantineReviewer, review_tree
-    from code_scanner.store import RunStore
+    from airlock_scan.canary import build_canary_set
+    from airlock_scan.config import load_config
+    from airlock_scan.database import build_index
+    from airlock_scan.gate import decide
+    from airlock_scan.quarantine import QuarantineReviewer, review_tree
+    from airlock_scan.store import RunStore
 
     cfg = load_config()
     target = args.target.expanduser().resolve()
     if not target.is_dir():
-        print(f"cscan-helper: error: not a directory: {target}", file=sys.stderr)
+        print(f"airlock-helper: error: not a directory: {target}", file=sys.stderr)
         return 2
 
     backend = _resolve_backend(cfg, args.fake)
@@ -346,7 +346,7 @@ def _cmd_quarantine(args: argparse.Namespace) -> int:
         gate=args.gate,
         backend=cfg.llm.provider,
         model=cfg.llm.effective_model,
-        cscan_version=__version__,
+        airlock_version=__version__,
     )
     reviewer = QuarantineReviewer(
         backend,
@@ -380,18 +380,18 @@ def _cmd_vet(args: argparse.Namespace) -> int:
     """Unified run: merge Tier-1 scanner output + Tier-2 quarantine into one run."""
     from datetime import datetime, timezone
 
-    from code_scanner.canary import build_canary_set
-    from code_scanner.config import load_config
-    from code_scanner.database import build_index
-    from code_scanner.gate import decide
-    from code_scanner.quarantine import QuarantineReviewer, review_tree
-    from code_scanner.report import build_report, render_markdown
-    from code_scanner.store import RunStore
+    from airlock_scan.canary import build_canary_set
+    from airlock_scan.config import load_config
+    from airlock_scan.database import build_index
+    from airlock_scan.gate import decide
+    from airlock_scan.quarantine import QuarantineReviewer, review_tree
+    from airlock_scan.report import build_report, render_markdown
+    from airlock_scan.store import RunStore
 
     cfg = load_config()
     target = args.target.expanduser().resolve()
     if not target.is_dir():
-        print(f"cscan-helper: error: not a directory: {target}", file=sys.stderr)
+        print(f"airlock-helper: error: not a directory: {target}", file=sys.stderr)
         return 2
 
     # Tier-1: optional deterministic findings produced by the shell scanners.
@@ -411,7 +411,7 @@ def _cmd_vet(args: argparse.Namespace) -> int:
         gate=args.gate,
         backend=cfg.llm.provider,
         model=cfg.llm.effective_model,
-        cscan_version=__version__,
+        airlock_version=__version__,
     )
     reviewer = QuarantineReviewer(
         backend,
@@ -461,21 +461,21 @@ def _cmd_vet(args: argparse.Namespace) -> int:
 def _cmd_eval(args: argparse.Namespace) -> int:
     import json
 
-    from code_scanner.canary import build_canary_set
-    from code_scanner.config import load_config
-    from code_scanner.evaluate import (
+    from airlock_scan.canary import build_canary_set
+    from airlock_scan.config import load_config
+    from airlock_scan.evaluate import (
         evaluate,
         heuristic_responder,
         load_corpus,
         render_eval_markdown,
     )
-    from code_scanner.llm_backend import FakeBackend
-    from code_scanner.quarantine import QuarantineReviewer
+    from airlock_scan.llm_backend import FakeBackend
+    from airlock_scan.quarantine import QuarantineReviewer
 
     cfg = load_config()
     root = args.corpus.expanduser().resolve()
     if not (root / "labels.json").is_file():
-        print(f"cscan-helper: error: no labels.json in {root}", file=sys.stderr)
+        print(f"airlock-helper: error: no labels.json in {root}", file=sys.stderr)
         return 2
     items = load_corpus(root)
 
@@ -519,7 +519,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "eval":
             return _cmd_eval(args)
     except Exception as exc:  # noqa: BLE001 - surface a clean error, never a traceback
-        print(f"cscan-helper: error: {exc}", file=sys.stderr)
+        print(f"airlock-helper: error: {exc}", file=sys.stderr)
         return 3
     parser.error(f"unknown command: {args.command}")
     return 2  # unreachable; parser.error exits

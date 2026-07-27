@@ -20,7 +20,7 @@ cd "$ROOT"
 assume_yes=0
 [ "${1:-}" = "--yes" ] && assume_yes=1
 
-ui_header "cscan • release"
+ui_header "airlock • release"
 
 # Warn on a dirty tree (uncommitted changes get swept into the bump commit).
 if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
