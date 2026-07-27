@@ -9,6 +9,12 @@ wants to read) and run `airlock` against it first. It orchestrates several best-
 aggregates their findings into one report, and gives you a pass/fail verdict so you can decide
 whether it's safe to install or expose to an LLM.
 
+## Status
+
+`airlock-scan` is **pre-1.0 software under active development**. You remain responsible for assessing
+the software's suitability and security for your own use. We encourage and support contributions —
+see [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
 ## How it works
 
 - **Primary UX is shell** — interactive [`gum`](https://github.com/charmbracelet/gum)-driven
@@ -165,3 +171,24 @@ contributing, you agree that your contributions are provided under that license
 
 - Populate custom `semgrep` rules under `config/semgrep/`.
 - Optional: add a CI step that self-scans this repo with `airlock`.
+
+## Security
+
+Found a vulnerability? **Please report it privately** — see [`SECURITY.md`](SECURITY.md), not a
+public issue.
+
+## Community
+
+This project follows the [Contributor Covenant](CODE_OF_CONDUCT.md) code of conduct.
+
+## License
+
+[Apache-2.0](LICENSE).
+
+### Disclaimer
+
+`airlock-scan` is provided **"AS IS", without warranty of any kind** and without any guarantee of
+fitness for a particular purpose. You are responsible for evaluating its suitability and for any
+risk in deploying it. See the **Disclaimer of Warranty (§7)** and **Limitation of Liability (§8)**
+in the [Apache-2.0 LICENSE](LICENSE).
+
