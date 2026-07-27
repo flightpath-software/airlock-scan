@@ -15,11 +15,21 @@ repo; this only configures where output goes and how the LLM tier behaves.
 from __future__ import annotations
 
 import os
+import re
 import tomllib
 from dataclasses import dataclass, field, fields, replace
 from pathlib import Path
 
 DEFAULT_STORE_ROOT = "~/airlock"
+
+# `api_key_env` holds the NAME of an environment variable, never the key itself.
+# Requiring an identifier shape means a secret accidentally pasted there is
+# rejected at config load — before any env lookup or error message can echo it.
+_ENV_VAR_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
+
+class ConfigError(ValueError):
+    """Raised when a configuration value is invalid."""
 
 # Harness ids registered as canary decoy sets by default (see data/harness_signatures.*).
 _DEFAULT_HARNESS_SETS = (
@@ -67,6 +77,21 @@ class LLMConfig:
     max_file_bytes: int = 200_000  # skip/chunk files larger than this
     max_files: int = 5  # safety/cost cap; raise with AIRLOCK_LLM_MAX_FILES
     gate_only_on_suspicious: bool = True
+
+    def __post_init__(self) -> None:
+        # `api_key_env` is the NAME of the env var that holds the key, never the
+        # key itself. Requiring an identifier shape means a secret accidentally
+        # pasted here is rejected here — before it can reach ``os.environ.get``
+        # or the "no API key in $..." error message. The error must not echo the
+        # value, so it reports only the length.
+        if not _ENV_VAR_NAME.match(self.api_key_env):
+            raise ConfigError(
+                "llm.api_key_env must be the NAME of an environment variable "
+                "(letters, digits, underscores — e.g. OPENAI_API_KEY), not a "
+                f"secret value; got a {len(self.api_key_env)}-character string "
+                "that is not a valid identifier. Put the variable's NAME here "
+                "and set the secret in that environment variable."
+            )
 
     @property
     def effective_base_url(self) -> str:

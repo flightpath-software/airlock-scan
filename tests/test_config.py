@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from airlock_scan.config import Config, load_config
+import pytest
+
+from airlock_scan.config import Config, ConfigError, LLMConfig, load_config
 
 
 def test_defaults():
@@ -87,3 +89,33 @@ def test_unknown_keys_ignored(tmp_path):
     )
     cfg = load_config(pyproject=pyproject, environ={})
     assert cfg.llm.provider == "openai"
+
+
+def test_api_key_env_accepts_valid_names():
+    # The default and any real env-var name are accepted unchanged.
+    assert LLMConfig().api_key_env == "OPENAI_API_KEY"
+    assert LLMConfig(api_key_env="MY_CUSTOM_KEY_1").api_key_env == "MY_CUSTOM_KEY_1"
+    assert LLMConfig(api_key_env="_secret").api_key_env == "_secret"
+
+
+def test_api_key_env_rejects_non_identifier():
+    # A value that isn't a valid env-var identifier — which a mis-pasted secret
+    # would not be — must be rejected at load, before it can reach
+    # os.environ.get() or the "no API key" error message. (Benign, low-entropy
+    # literals here on purpose, so the fixture doesn't look like a real secret.)
+    with pytest.raises(ConfigError):
+        LLMConfig(api_key_env="not-an-identifier")  # '-' is not allowed
+
+
+def test_api_key_env_error_does_not_echo_the_value():
+    bad_value = "do-not-echo-this-value"
+    with pytest.raises(ConfigError) as exc:
+        LLMConfig(api_key_env=bad_value)
+    assert bad_value not in str(exc.value)  # the offending value must not leak
+
+
+def test_env_override_bad_api_key_env_is_rejected():
+    # The AIRLOCK_LLM_API_KEY_ENV override path is validated too (reconstructs
+    # LLMConfig via replace() -> __post_init__).
+    with pytest.raises(ConfigError):
+        load_config(pyproject=None, environ={"AIRLOCK_LLM_API_KEY_ENV": "bad-name-123"})

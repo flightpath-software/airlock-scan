@@ -1,0 +1,1 @@
+Validate that `llm.api_key_env` (via `[tool.airlock]` or the `AIRLOCK_LLM_API_KEY_ENV` override) is an environment-variable *name*, not a secret value. A secret accidentally pasted there is now rejected at config load — before it can be looked up or echoed in the "no API key" message — with an error that does not print the offending value. Closes #24.
