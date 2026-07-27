@@ -5,6 +5,10 @@ and how to run it; this folder covers contributor workflows.
 
 ## Guides
 
+- [Configuration](configuration.md) — the four config sources and their
+  precedence, how the API key works (the config holds the env-var *name*, never
+  the secret), the full field reference, and recipes for switching LLM provider
+  or running fully offline.
 - [Making commits](commits.md) — Conventional Commits, the commit-message
   template, `cz commit`, and how to do it from the **Tower** Git client.
 - [Changelog & releases](changelog.md) — how to add a human-readable news
