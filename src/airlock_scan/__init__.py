@@ -12,4 +12,4 @@ from airlock_scan.findings import Finding, Severity
 
 __all__ = ["Finding", "Severity", "__version__"]
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
