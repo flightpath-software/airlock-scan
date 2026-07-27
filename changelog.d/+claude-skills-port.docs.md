@@ -1,0 +1,1 @@
+Add four Claude Code skills adapted from [mattpocock/skills](https://github.com/mattpocock/skills) (MIT, attributed in `.claude/skills/NOTICE.md`): `code-review` (two-axis Standards + Spec review), `domain-modeling`, `grilling`, and `grill-with-docs`. Also add `docs/CODING_STANDARDS.md` — the canonical coding conventions the `code-review` Standards axis checks against.
