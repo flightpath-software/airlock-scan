@@ -43,10 +43,6 @@ jobs:
         uses: github/codeql-action/analyze@v3
         with:
           category: "/language:python"
-          # INTERIM (remove at go-public): uploading results to the code-scanning API requires
-          # GitHub "Code Security" (Advanced Security), which is OFF on this private repo — the
-          # upload otherwise fails with a configuration error and reds the check. `upload: false`
-          # still builds the DB and runs the queries; it just skips the send. Public repos get code
-          # scanning for FREE, so DELETE this line (default is upload) once the repo is public or
-          # Advanced Security is enabled, to make CodeQL a hard gate again. See project-plan-public.md §5.4.
-          upload: false
+          # Results upload to Security → Code scanning (free on public repos). If this step ever
+          # 403s with "Code Security must be enabled", turn on code scanning in
+          # Settings → Advanced Security.
