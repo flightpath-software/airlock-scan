@@ -114,8 +114,37 @@ def test_api_key_env_error_does_not_echo_the_value():
     assert bad_value not in str(exc.value)  # the offending value must not leak
 
 
-def test_env_override_bad_api_key_env_is_rejected():
-    # The AIRLOCK_LLM_API_KEY_ENV override path is validated too (reconstructs
-    # LLMConfig via replace() -> __post_init__).
+def test_api_key_env_rejects_trailing_newline():
+    # A `$` anchor would accept this: it also matches just before a final
+    # newline. The value is used for the env lookup and printed by the CLI, so
+    # the check has to be a whole-string one.
     with pytest.raises(ConfigError):
-        load_config(pyproject=None, environ={"AIRLOCK_LLM_API_KEY_ENV": "bad-name-123"})
+        LLMConfig(api_key_env="OPENAI_API_KEY\n")
+
+
+def test_api_key_env_rejects_non_string():
+    # TOML values aren't coerced on the way in (_coerce_section keeps them as
+    # parsed), so a non-string must fail as a ConfigError the CLI can report —
+    # not as a TypeError out of the regex.
+    with pytest.raises(ConfigError):
+        LLMConfig(api_key_env=123)
+
+
+def test_pyproject_bad_api_key_env_is_rejected(tmp_path):
+    # The [tool.airlock] path is validated too: _apply_table reconstructs
+    # LLMConfig via replace() -> __post_init__.
+    pyproject = tmp_path / "pyproject.toml"
+    pyproject.write_text('[tool.airlock.llm]\napi_key_env = "not-a-name"\n', encoding="utf-8")
+    with pytest.raises(ConfigError):
+        load_config(pyproject=pyproject, environ={})
+
+
+def test_env_override_bad_api_key_env_is_rejected(tmp_path):
+    # The AIRLOCK_LLM_API_KEY_ENV override path is validated too (reconstructs
+    # LLMConfig via replace() -> __post_init__). Point at a missing pyproject so
+    # the loader can't walk up to a real one outside the test.
+    with pytest.raises(ConfigError):
+        load_config(
+            pyproject=tmp_path / "nope.toml",
+            environ={"AIRLOCK_LLM_API_KEY_ENV": "bad-name-123"},
+        )

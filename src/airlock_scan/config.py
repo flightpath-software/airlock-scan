@@ -25,11 +25,14 @@ DEFAULT_STORE_ROOT = "~/airlock"
 # `api_key_env` holds the NAME of an environment variable, never the key itself.
 # Requiring an identifier shape means a secret accidentally pasted there is
 # rejected at config load — before any env lookup or error message can echo it.
-_ENV_VAR_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+# Matched with fullmatch(): a `$` anchor would also accept a trailing newline.
+# This rejects most secret formats but not all — see issue #41.
+_ENV_VAR_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 
 
 class ConfigError(ValueError):
     """Raised when a configuration value is invalid."""
+
 
 # Harness ids registered as canary decoy sets by default (see data/harness_signatures.*).
 _DEFAULT_HARNESS_SETS = (
@@ -84,13 +87,16 @@ class LLMConfig:
         # pasted here is rejected here — before it can reach ``os.environ.get``
         # or the "no API key in $..." error message. The error must not echo the
         # value, so it reports only the length.
-        if not _ENV_VAR_NAME.match(self.api_key_env):
+        # A TOML value like `api_key_env = 123` reaches here uncoerced, so check
+        # the type first — otherwise the regex raises TypeError instead of a
+        # ConfigError the caller can report cleanly.
+        if not isinstance(self.api_key_env, str) or not _ENV_VAR_NAME.fullmatch(self.api_key_env):
             raise ConfigError(
                 "llm.api_key_env must be the NAME of an environment variable "
                 "(letters, digits, underscores — e.g. OPENAI_API_KEY), not a "
-                f"secret value; got a {len(self.api_key_env)}-character string "
-                "that is not a valid identifier. Put the variable's NAME here "
-                "and set the secret in that environment variable."
+                f"secret value; got a {len(str(self.api_key_env))}-character "
+                "string that is not a valid identifier. Put the variable's NAME "
+                "here and set the secret in that environment variable."
             )
 
     @property
