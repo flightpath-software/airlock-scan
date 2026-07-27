@@ -1,7 +1,7 @@
 """Structural validation of the bundled Semgrep taint rule pack.
 
 We can't run Semgrep here (offline), but we can assert the rule files are
-well-formed taint rules with the fields cscan relies on. Skipped without PyYAML.
+well-formed taint rules with the fields airlock relies on. Skipped without PyYAML.
 """
 
 from __future__ import annotations
@@ -28,7 +28,7 @@ def test_rules_are_well_formed_taint_rules(path):
     assert "rules" in doc and doc["rules"], f"{path.name} has no rules"
     ids = set()
     for rule in doc["rules"]:
-        assert rule["id"].startswith("cscan-"), "rule ids should be namespaced"
+        assert rule["id"].startswith("airlock-"), "rule ids should be namespaced"
         assert rule["id"] not in ids, "duplicate rule id"
         ids.add(rule["id"])
         assert rule["mode"] == "taint"
@@ -36,4 +36,4 @@ def test_rules_are_well_formed_taint_rules(path):
         assert rule["severity"] == "ERROR"  # -> HIGH in the finding model
         assert rule["pattern-sources"]
         assert rule["pattern-sinks"]
-        assert rule.get("metadata", {}).get("cscan") == "taint"
+        assert rule.get("metadata", {}).get("airlock") == "taint"

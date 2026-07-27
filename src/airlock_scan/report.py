@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections import Counter
 from dataclasses import dataclass
 
-from code_scanner.findings import Finding, Severity
+from airlock_scan.findings import Finding, Severity
 
 _SEVERITY_STYLE = {
     Severity.CRITICAL: "bold red",
@@ -136,7 +136,7 @@ def render_markdown(
     canary_events = canary_events or []
     file_verdicts = file_verdicts or []
 
-    lines = ["# cscan report", ""]
+    lines = ["# airlock report", ""]
     if target:
         lines.append(f"- **Target:** `{target}`")
     if generated:
@@ -221,7 +221,7 @@ def _render_rich(report: Report) -> str:
     console = Console(file=buf, force_terminal=False, width=120)
 
     if report.findings:
-        table = Table(title="code-scanner findings", show_lines=False, expand=False)
+        table = Table(title="airlock-scan findings", show_lines=False, expand=False)
         table.add_column("Severity", no_wrap=True)
         table.add_column("Tool", no_wrap=True)
         table.add_column("Rule", max_width=40, overflow="fold")

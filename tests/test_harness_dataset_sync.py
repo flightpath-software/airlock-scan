@@ -1,7 +1,7 @@
 """Ensure the packaged JSON dataset stays in sync with the human-facing YAML.
 
 The YAML at ``data/harness_signatures.yaml`` is the source of truth that humans
-edit; the packaged ``src/code_scanner/data/harness_signatures.json`` is the
+edit; the packaged ``src/airlock_scan/data/harness_signatures.json`` is the
 machine form loaded at runtime (stdlib json — no PyYAML at runtime). This test
 regenerates the expected JSON from the YAML and compares. It is skipped when
 PyYAML is unavailable, so it never adds a runtime dependency.
@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from code_scanner.canary import load_signatures
+from airlock_scan.canary import load_signatures
 
 yaml = pytest.importorskip("yaml")
 

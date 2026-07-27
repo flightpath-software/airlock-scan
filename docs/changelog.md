@@ -16,8 +16,8 @@ Why fragments instead of generating from commit messages:
 The guided way (recommended):
 
 ```bash
-cscan changelog          # pick a type, enter a summary, optional Linear ticket
-cscan changelog preview  # see how the unreleased section will render
+airlock changelog          # pick a type, enter a summary, optional Linear ticket
+airlock changelog preview  # see how the unreleased section will render
 ```
 
 The helper prompts for an optional Linear ticket ID (e.g. `FP-123`) and title,
@@ -63,16 +63,16 @@ Defined in `[tool.towncrier]` (rendered top-to-bottom in this order):
 
 ## Releasing
 
-`cscan release` runs the whole flow with confirmations:
+`airlock release` runs the whole flow with confirmations:
 
 1. compute the next version from Conventional Commits — `cz bump --get-next`
 2. compile fragments into `CHANGELOG.md` and remove them — `towncrier build`
-3. bump `pyproject.toml` + `src/code_scanner/__init__.py` + `uv.lock`, commit, and
+3. bump `pyproject.toml` + `src/airlock_scan/__init__.py` + `uv.lock`, commit, and
    create a `vX.Y.Z` tag — `cz bump`
 
 ```bash
-cscan release            # interactive
-cscan release --yes      # non-interactive (CI / scripted)
+airlock release            # interactive
+airlock release --yes      # non-interactive (CI / scripted)
 git push --follow-tags   # publish the commit + tag
 ```
 
@@ -89,7 +89,7 @@ Notes:
 - `commitizen` is configured with `update_changelog_on_bump = false` so it never
   fights towncrier over `CHANGELOG.md`.
 - `version_provider = "uv"` keeps `pyproject.toml` and `uv.lock` versions in sync.
-- Preview a release without changing anything: `cscan changelog preview` or
+- Preview a release without changing anything: `airlock changelog preview` or
   `uv run cz bump --dry-run`.
 
 ## CI guard

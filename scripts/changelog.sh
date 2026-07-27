@@ -18,7 +18,7 @@ source "${ROOT}/scripts/lib/tools.sh"
 TYPES=(security added changed fixed scanner deprecated removed docs misc)
 
 # Linear workspace slug — used to construct issue URLs.
-: "${CSCAN_LINEAR_WORKSPACE:=flightpath}"
+: "${AIRLOCK_LINEAR_WORKSPACE:=flightpath}"
 
 slugify() {
   printf '%s' "$1" | tr '[:upper:]' '[:lower:]' \
@@ -37,7 +37,7 @@ cmd_new() {
   ticket="$(ui_input "Linear ticket ID? (e.g. FP-123, leave blank to skip)")"
   if [ -n "$ticket" ]; then
     title="$(ui_input "Ticket title? (leave blank to use ID only)")"
-    local url="https://linear.app/${CSCAN_LINEAR_WORKSPACE}/issue/${ticket}"
+    local url="https://linear.app/${AIRLOCK_LINEAR_WORKSPACE}/issue/${ticket}"
     if [ -n "$title" ]; then
       content="[${ticket}: ${title}](${url}) — ${summary}"
     else

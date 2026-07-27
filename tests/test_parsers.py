@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import json
 
-from code_scanner.findings import Severity
-from code_scanner.parsers import (
+from airlock_scan.findings import Severity
+from airlock_scan.parsers import (
     load_results_dir,
     parse_anti_trojan_source,
     parse_sarif,
 )
-from code_scanner.report import build_report
+from airlock_scan.report import build_report
 
 SAMPLE_SARIF = {
     "version": "2.1.0",

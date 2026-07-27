@@ -4,16 +4,16 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from code_scanner.canary import build_canary_set
-from code_scanner.evaluate import (
+from airlock_scan.canary import build_canary_set
+from airlock_scan.evaluate import (
     CorpusItem,
     evaluate,
     heuristic_responder,
     load_corpus,
     render_eval_markdown,
 )
-from code_scanner.llm_backend import FakeBackend
-from code_scanner.quarantine import FileVerdict, QuarantineReviewer, ReviewOutcome
+from airlock_scan.llm_backend import FakeBackend
+from airlock_scan.quarantine import FileVerdict, QuarantineReviewer, ReviewOutcome
 
 _CORPUS = Path(__file__).resolve().parents[1] / "corpus"
 

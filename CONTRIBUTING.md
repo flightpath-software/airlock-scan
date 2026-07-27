@@ -1,6 +1,6 @@
-# Contributing to code-scanner
+# Contributing to airlock-scan
 
-Thanks for your interest! `code-scanner` (`cscan`) is in early development, so the
+Thanks for your interest! `airlock-scan` (`airlock`) is in early development, so the
 process below will firm up as the project stabilizes. If you're planning a
 non-trivial change, please open an issue first so we can coordinate.
 
@@ -31,12 +31,12 @@ scope, skip tests, or can't be explained by their author will be closed without 
 
 ## License
 
-`code-scanner` is licensed under **Apache-2.0** (see [`LICENSE`](./LICENSE)).
+`airlock-scan` is licensed under **Apache-2.0** (see [`LICENSE`](./LICENSE)).
 By contributing, you agree that your contributions are provided under that license.
 
 ## Branching model
 
-`cscan` uses a three-branch promotion flow. Changes move **up** the chain via
+`airlock` uses a three-branch promotion flow. Changes move **up** the chain via
 reviewed pull requests; nothing is pushed directly to a protected branch.
 
 ```
@@ -68,14 +68,14 @@ Use [`uv`](https://docs.astral.sh/uv/) — it manages Python and the project's d
 
 ```bash
 uv sync                       # resolve deps under the 3-day supply-chain cooldown
-uv run cscan-helper --help    # the Python helper CLI
+uv run airlock-helper --help    # the Python helper CLI
 uv run pytest -q              # tests
 uv run ruff check .           # lint (line-length 100, py312)
 ```
 
-- The primary UX is the shell launcher `bin/cscan` (needs [`gum`](https://github.com/charmbracelet/gum));
-  the Python package `code_scanner` is a thin helper (parse/merge/gate). See the
-  [README](./README.md) for the external scanners `cscan` orchestrates and how to install them.
+- The primary UX is the shell launcher `bin/airlock` (needs [`gum`](https://github.com/charmbracelet/gum));
+  the Python package `airlock_scan` is a thin helper (parse/merge/gate). See the
+  [README](./README.md) for the external scanners `airlock` orchestrates and how to install them.
 - **Always** add dependencies with `uv add` / `uv add --dev` (never hand-edit `pyproject.toml` /
   `uv.lock`); they must clear the 3-day cooldown + OSV check. Target Python 3.12; prefer stdlib
   over new runtime deps.
@@ -103,7 +103,7 @@ Pre-1.0, breaking changes bump MINOR (`major_version_zero = true`). More in
 bug is expected to add or update tests that cover it, and the full suite must pass in CI. Bug fixes
 should include a regression test that fails without the fix. Docs / CI / refactor-only changes are
 exempt (use the `skip-changelog` label). Shell entry points must still parse — CI runs
-`bash -n` over `bin/cscan`, `scripts/*.sh`, `scripts/lib/*.sh`, and `scanners/*.sh`.
+`bash -n` over `bin/airlock`, `scripts/*.sh`, `scripts/lib/*.sh`, and `scanners/*.sh`.
 
 ## Changelog — a fragment for (almost) every change
 
@@ -112,7 +112,7 @@ fragments in [`changelog.d/`](changelog.d/) — never edit `CHANGELOG.md` by han
 **user-facing behavior**, add one fragment:
 
 ```bash
-cscan changelog                     # guided: pick a type, write a one-line summary
+airlock changelog                     # guided: pick a type, write a one-line summary
 # or directly:
 uv run towncrier create -c "Add osv-scanner adapter" +osv-adapter.scanner.md
 ```
@@ -120,7 +120,7 @@ uv run towncrier create -c "Add osv-scanner adapter" +osv-adapter.scanner.md
 Fragment name: `+<slug>.<type>.md`. Types (= changelog sections): `security`, `added`, `changed`,
 `fixed`, `scanner`, `deprecated`, `removed`, `docs`, `misc`. Write entries **for readers**. CI
 requires *either* a fragment *or* the `skip-changelog` label (for docs / CI / refactor-only PRs).
-Preview the assembled notes with `cscan changelog preview`. More in
+Preview the assembled notes with `airlock changelog preview`. More in
 [`docs/changelog.md`](docs/changelog.md).
 
 ## Supply-chain: the `exclude-newer` delay
@@ -147,13 +147,13 @@ not a hidden flag. Drop it once the 3-day window covers the version anyway.
 
 "Cutting a release" is a **version ceremony**, not a branch promotion: towncrier compiles the
 `changelog.d/` fragments into `CHANGELOG.md`, and commitizen bumps + tags the version (keeping
-`pyproject.toml`, `src/code_scanner/__init__.py`, and `uv.lock` in sync). A maintainer does it on a
+`pyproject.toml`, `src/airlock_scan/__init__.py`, and `uv.lock` in sync). A maintainer does it on a
 `release/X.Y.Z` branch cut from `staging`, then merges that branch into `main` via a **merge-commit
 PR** — the merge is how the release reaches the protected `main`:
 
 ```bash
 git switch -c release/X.Y.Z origin/staging   # freeze the QA'd candidate
-cscan release                                # changelog → bump → commit → tag vX.Y.Z (does NOT push)
+airlock release                                # changelog → bump → commit → tag vX.Y.Z (does NOT push)
 git push -u origin release/X.Y.Z             # open a PR release/X.Y.Z -> main, merge (no squash)
 git fetch origin main && git push origin vX.Y.Z   # publish the tag once its commit is on main
 ```

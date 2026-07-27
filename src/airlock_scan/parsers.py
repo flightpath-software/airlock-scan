@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from code_scanner.findings import Finding, Severity
+from airlock_scan.findings import Finding, Severity
 
 
 def _sarif_rule_levels(driver: dict) -> dict[str, object]:

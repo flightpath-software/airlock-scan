@@ -1,6 +1,6 @@
 # Normalize line endings: treat everything as text with LF in the repo, and let
 # Git auto-detect binaries. This keeps shell scripts and Python LF-clean across
-# platforms (a CRLF in bin/cscan or a scanner adapter would break execution).
+# platforms (a CRLF in bin/airlock or a scanner adapter would break execution).
 * text=auto eol=lf
 
 # Shell + Python must always be LF regardless of a contributor's core.autocrlf.

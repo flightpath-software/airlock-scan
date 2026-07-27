@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Interactive gum main menu for cscan.
+# Interactive gum main menu for airlock.
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -9,7 +9,7 @@ source "${ROOT}/scripts/lib/common.sh"
 source "${ROOT}/scripts/lib/config.sh"
 
 while true; do
-  ui_header "cscan — repo security scanner"
+  ui_header "airlock — repo security scanner"
   choice="$(ui_choose "What would you like to do?" \
     "Vet a repo (Tier-1 + Tier-2)" \
     "Scan a repo (Tier-1 only)" \
@@ -27,8 +27,8 @@ while true; do
     "Scan a repo (Tier-1 only)")    bash "${ROOT}/scripts/scan.sh" || true ;;
     "Quarantine review (Tier-2 only)")
         t="$(ui_input "Path to the repo/dir to review")"
-        [ -n "$t" ] && ( cd "$ROOT" && uv run cscan-helper quarantine "$t" ) || true ;;
-    "Evaluate against corpus")  ( cd "$ROOT" && uv run cscan-helper eval ) || true ;;
+        [ -n "$t" ] && ( cd "$ROOT" && uv run airlock-helper quarantine "$t" ) || true ;;
+    "Evaluate against corpus")  ( cd "$ROOT" && uv run airlock-helper eval ) || true ;;
     "Install / check tools")    bash "${ROOT}/scripts/install-tools.sh" || true ;;
     "Configure shell")          bash "${ROOT}/scripts/shell-setup.sh" || true ;;
     "Doctor (env + OSV audit)") bash "${ROOT}/scripts/doctor.sh" || true ;;

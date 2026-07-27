@@ -1,6 +1,6 @@
-# Validation — the promises `cscan` keeps, and the code that proves them
+# Validation — the promises `airlock` keeps, and the code that proves them
 
-`code-scanner` is a security tool, so its guarantees should be **checkable**, not
+`airlock-scan` is a security tool, so its guarantees should be **checkable**, not
 asserted. This file records the guarantees the public repo makes and, for each, the
 running code that proves it. Lint and passing tests are necessary but not sufficient —
 wherever possible a promise is proven by an executable check the CI in
@@ -21,7 +21,7 @@ uvx pip-audit -r <(uv export --frozen --format requirements-txt --no-emit-projec
 |---|---|
 | Lint clean | `ruff check .` (`ci.yml` → *lint + test*) |
 | Helper tests pass | `pytest -q` — currently 71 tests (`ci.yml`) |
-| Shell entry points parse | `bash -n bin/cscan scripts/*.sh scripts/lib/*.sh scanners/*.sh` (`ci.yml`) |
+| Shell entry points parse | `bash -n bin/airlock scripts/*.sh scripts/lib/*.sh scanners/*.sh` (`ci.yml`) |
 | Lockfile matches the 3-day cooldown policy | `uv lock --locked` (`ci.yml`) |
 | Valid wheel + sdist | `uv build` (run locally; a CI build/self-scan step is planned — see README TODO) |
 

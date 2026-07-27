@@ -35,14 +35,14 @@ in CI, so the format matters.
 > `security` and `scanner` are **not** commit types (the validator rejects them).
 > Use a standard type with a scope instead — `fix(security): …`, `feat(scanners): …`.
 > The *changelog* still gets dedicated **Security** and **Scanners** sections,
-> chosen by the fragment type when you run `cscan changelog` (see [changelog.md](changelog.md)).
+> chosen by the fragment type when you run `airlock changelog` (see [changelog.md](changelog.md)).
 
 ### Breaking changes
 
 Add `!` after the type/scope **or** a `BREAKING CHANGE:` footer:
 
 ```
-feat(cli)!: rename `cscan scan` flags
+feat(cli)!: rename `airlock scan` flags
 
 BREAKING CHANGE: `--only` replaced by positional scanner ids.
 ```
@@ -96,7 +96,7 @@ If you commit with [Tower](https://www.git-tower.com/):
    (`cz check`) will, so follow the template.
 3. **Add a changelog fragment** before (or with) the commit — Tower won't do this
    for you. Two options:
-   - **CLI:** run `cscan changelog` in a terminal; it prompts for the type,
+   - **CLI:** run `airlock changelog` in a terminal; it prompts for the type,
      summary, and an optional Linear ticket ID + title, then writes the fragment.
      Stage the resulting `changelog.d/+<slug>.<type>.md` in Tower alongside your
      changes.
@@ -106,7 +106,7 @@ If you commit with [Tower](https://www.git-tower.com/):
 
    See [changelog.md](changelog.md).
 
-> Tip: keep a terminal open for `cscan changelog`; do staging/committing in Tower
+> Tip: keep a terminal open for `airlock changelog`; do staging/committing in Tower
 > if you prefer the GUI. Both paths produce the same result.
 
 ## Validation
@@ -128,5 +128,5 @@ Every user-facing change needs a news fragment. The CI `guards` job also runs
 `towncrier check` and will fail a PR that doesn't add one. The fastest way:
 
 ```bash
-cscan changelog
+airlock changelog
 ```

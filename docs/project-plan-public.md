@@ -1,9 +1,9 @@
-# Project Plan — Taking `code-scanner` Public
+# Project Plan — Taking `airlock-scan` Public
 
 > Status: **DRAFT for review** · Owner: Sean Howard · Created: 2026-07-21 ·
-> Target repo: `flightpath-software/code-scanner`
+> Target repo: `flightpath-software/airlock-scan`
 >
-> This plan describes how to turn `code-scanner` (`cscan`) into a well-governed
+> This plan describes how to turn `airlock-scan` (`airlock`) into a well-governed
 > **public** repository, matching the patterns already established in
 > [`memex-trust-layer`](https://github.com/flightpath-software/memex-trust-layer)
 > (our reference implementation for a public Flightpath repo). It covers the
@@ -19,7 +19,7 @@
 
 ## 0. TL;DR — what "public-ready" means here
 
-`code-scanner` is currently a private repo with a single `main` branch, a
+`airlock-scan` is currently a private repo with a single `main` branch, a
 minimal CI workflow, no license, and no public-facing governance files. To match
 `memex-trust-layer` it needs, in four buckets:
 
@@ -46,7 +46,7 @@ author identities) is not part of the public record.
 ## 1. Pattern reference — what `memex-trust-layer` does
 
 This is the checklist we are matching. Each item links to the file in memex that
-establishes the pattern; §3 maps each to a concrete action for `code-scanner`.
+establishes the pattern; §3 maps each to a concrete action for `airlock-scan`.
 
 ### 1.1 Governance & legal files (repo root)
 
@@ -56,10 +56,10 @@ establishes the pattern; §3 maps each to a concrete action for `code-scanner`.
 | `SECURITY.md` | Private vuln reporting via GitHub advisories, published SLAs (3-business-day ack), a **"security posture"** section that documents branch protection, CodeQL/Bandit, pip-audit, gitleaks, dependency cooldown, least-privilege CI. |
 | `CONTRIBUTING.md` | Code of Conduct link, AI-assisted-contribution bar (a human is accountable), license/CLA-DCO note, **branching model**, testing policy, changelog policy, supply-chain `exclude-newer` explanation. |
 | `CODE_OF_CONDUCT.md` | Contributor Covenant. |
-| `README.md` | Status banner, quickstart, clear "what this is." (cscan already has a strong README — it just needs the license TODO resolved.) |
+| `README.md` | Status banner, quickstart, clear "what this is." (airlock already has a strong README — it just needs the license TODO resolved.) |
 
 memex also ships `GLOSSARY.md`, `VALIDATION.md`, and a `docs/adr/` tree. Those
-are **valuable but optional** for cscan's first public cut — see §3.5.
+are **valuable but optional** for airlock's first public cut — see §3.5.
 
 ### 1.2 `.github/` scaffolding
 
@@ -77,9 +77,9 @@ are **valuable but optional** for cscan's first public cut — see §3.5.
 ### 1.3 Supply-chain & CI hygiene
 
 - **Dependency cooldown** via `[tool.uv] exclude-newer` — memex uses `"5 days"`;
-  cscan already uses `"3 days"` (keep as-is, it is stricter and intentional).
+  airlock already uses `"3 days"` (keep as-is, it is stricter and intentional).
 - **`uv lock --locked` in CI** so the lockfile can't drift from the cooldown
-  policy (memex enforces this in its `fitness` job; cscan's CI should gain it).
+  policy (memex enforces this in its `fitness` job; airlock's CI should gain it).
 - **Least-privilege CI** — `permissions: contents: read` at the top of every
   workflow, elevating only the specific job that needs `security-events: write`.
 - **Actions triggers** fire on the integration branches (`[main, develop]`), not
@@ -108,14 +108,14 @@ instructions:
 exclude = ["/web/build", "/web/node_modules", "/AGENTS.md", "/CLAUDE.md"]
 ```
 
-cscan uses the `uv_build` backend, so the equivalent is a
+airlock uses the `uv_build` backend, so the equivalent is a
 `[tool.uv.build-backend]` module/exclude configuration (see §3.6).
 
 ---
 
-## 2. Gap analysis — `code-scanner` today vs. the target
+## 2. Gap analysis — `airlock-scan` today vs. the target
 
-| Pattern | memex has | code-scanner today | Action |
+| Pattern | memex has | airlock-scan today | Action |
 |---|---|---|---|
 | `LICENSE` | ✅ Apache-2.0 | ❌ none (`pyproject` `license = "TODO"`) | **Add Apache-2.0** (§3.1) |
 | `SECURITY.md` | ✅ | ❌ | Add (§3.2) |
@@ -145,7 +145,7 @@ cscan uses the `uv_build` backend, so the equivalent is a
 
 All of the following are ordinary file additions and can be done on a normal
 feature branch (e.g. this branch) and merged **before** the flatten step. Draft
-content is provided or referenced; copy memex's files and re-word for cscan.
+content is provided or referenced; copy memex's files and re-word for airlock.
 
 ### 3.1 License (do this first — it unblocks distribution)
 
@@ -170,17 +170,17 @@ content is provided or referenced; copy memex's files and re-word for cscan.
 
 - **`SECURITY.md`** — copy memex's structure and swap the repo name/URL. Keep the
   two-part shape: (a) private reporting via
-  `https://github.com/flightpath-software/code-scanner/security/advisories/new`
-  with the same SLAs, and (b) a **"Security posture"** section. cscan's posture
+  `https://github.com/flightpath-software/airlock-scan/security/advisories/new`
+  with the same SLAs, and (b) a **"Security posture"** section. airlock's posture
   section is a natural fit — it can point at the deterministic Tier-1 scanners,
   the 3-day cooldown, the OSV pre-install check, gitleaks/CodeQL/Bandit in CI,
   and least-privilege workflows. Adjust the "supported versions" table for
-  cscan's pre-1.0 status.
+  airlock's pre-1.0 status.
 - **`CONTRIBUTING.md`** — adapt memex's. Sections to keep: Code of Conduct link,
   AI-assisted-contribution bar, license note, **the branching model** (§4 below,
   updated for the three-branch flow), testing policy, the changelog-fragment
-  policy (cscan already has `cscan changelog`), and the `exclude-newer`
-  supply-chain explanation (change `5 days` → `3 days`). Much of cscan's existing
+  policy (airlock already has `airlock changelog`), and the `exclude-newer`
+  supply-chain explanation (change `5 days` → `3 days`). Much of airlock's existing
   README "Contributing" section can move here.
 - **`CODE_OF_CONDUCT.md`** — Contributor Covenant; copy memex's verbatim (update
   the contact email to the security/abuse address you want).
@@ -193,15 +193,15 @@ content is provided or referenced; copy memex's files and re-word for cscan.
   (`uv` + `github-actions`, weekly Mondays, `dependencies`/`skip-changelog`
   labels). This is what keeps pinned actions and the lockfile current.
 - **`PULL_REQUEST_TEMPLATE.md`** — copy memex's (Summary / Closes / Changelog /
-  Verification). Change the test command to cscan's
+  Verification). Change the test command to airlock's
   (`uv run pytest -q` and `bash -n` shell checks).
 - **`ISSUE_TEMPLATE/`** — `bug_report.yml`, `feature_request.yml`, and
   `config.yml`. In `config.yml`, set `blank_issues_enabled: false` and add the
-  security-advisory contact link (pointing at cscan's advisories/new URL).
+  security-advisory contact link (pointing at airlock's advisories/new URL).
 
 ### 3.4 CI / security workflows
 
-cscan's current `ci.yml` (lint + test + shell-syntax + changelog/commit guards)
+airlock's current `ci.yml` (lint + test + shell-syntax + changelog/commit guards)
 is good and should stay. Add the security workflows memex has, and align triggers
 to the new branch set. Two decisions:
 
@@ -209,7 +209,7 @@ to the new branch set. Two decisions:
   `[main, develop, staging]` across workflows so integration and QA branches are
   gated too. (PR triggers already cover everything targeting those branches.)
 - **Split vs. keep the changelog guard:** memex has a dedicated `changelog.yml`
-  with a `skip-changelog` **label** escape hatch; cscan folds `towncrier check`
+  with a `skip-changelog` **label** escape hatch; airlock folds `towncrier check`
   into `ci.yml` with no label escape. Recommend adopting the label escape hatch
   (docs/CI/refactor-only PRs shouldn't need a fragment) — either by adding the
   label check to `ci.yml` or by splitting out `changelog.yml`. This also means
@@ -220,11 +220,11 @@ Workflows to add (copy from memex, they are Python-generic):
 1. **`codeql.yml`** — languages: `python`; triggers push/PR on the three branches
    + weekly cron; `security-events: write` only on the analyze job.
 2. **`security.yml`** — `pip-audit` over `uv export`ed requirements + `bandit -r
-   src`. (cscan's `src/` is small; Bandit will be fast.)
+   src`. (airlock's `src/` is small; Bandit will be fast.)
 3. **`gitleaks.yml`** — copy memex's hardened version (SHA-pinned checkout,
    checksum-verified gitleaks binary, PR scans `base..head`, SARIF upload guarded
    to same-repo push/schedule). Add a `.gitleaksignore` at the root (can start
-   empty). **Note:** cscan's `corpus/` contains deliberate adversarial fixtures
+   empty). **Note:** airlock's `corpus/` contains deliberate adversarial fixtures
    with trigger words — confirm none are literal secret patterns that would trip
    gitleaks; add ignores if so.
 4. **Add `uv lock --locked`** as the first step of the test job in `ci.yml`, so
@@ -238,22 +238,22 @@ ongoing bumps once §3.3 lands.
 ### 3.5 Optional: ADRs, GLOSSARY, VALIDATION (recommended, not blocking)
 
 memex's `docs/adr/`, `GLOSSARY.md`, and `VALIDATION.md` are high-value but not
-required for a first public cut. cscan already has an excellent
+required for a first public cut. airlock already has an excellent
 `docs/project-plan.md` that plays a similar role to a design spec. Recommended
 lightweight adoption:
 
-- **`VALIDATION.md`** — cscan has a natural fitness story (deterministic tier is
+- **`VALIDATION.md`** — airlock has a natural fitness story (deterministic tier is
   authoritative, canary FP rate target, offline mode, rebuildable index — see
   `project-plan.md` §8 success metrics S1–S7). A short VALIDATION.md that maps
   each promise to the test that proves it would be a strong public signal.
-- **ADRs** — capture the two load-bearing decisions cscan already made in prose:
+- **ADRs** — capture the two load-bearing decisions airlock already made in prose:
   (1) *the deterministic Tier-1 gate is authoritative; the LLM tier is advisory
   and can never clear a Tier-1 finding* (from `CLAUDE.md` house rules /
   `gate.py`), and (2) *reports stay local to the user, never written into the
   scanned repo or sent off-machine except the configured Tier-2 call*. These are
   exactly the "hard to reverse, surprising, real trade-off" decisions ADRs exist
   for.
-- **GLOSSARY** — lower priority; cscan's vocabulary (Finding, gate verdict,
+- **GLOSSARY** — lower priority; airlock's vocabulary (Finding, gate verdict,
   canary/tripwire, harness signature, Tier-1/Tier-2) is already defined in the
   docs.
 
@@ -261,7 +261,7 @@ lightweight adoption:
 
 - **`.gitattributes`** — copy memex's (normalizes line endings to `lf`). Cheap,
   avoids CRLF churn from contributors on Windows.
-- **Exclude agent-instruction files from the sdist.** cscan's `CLAUDE.md` should
+- **Exclude agent-instruction files from the sdist.** airlock's `CLAUDE.md` should
   not ship inside the distributed package (a consuming project must not inherit
   our agent instructions). With the `uv_build` backend, configure the build
   target to exclude it — e.g.:
@@ -277,10 +277,10 @@ lightweight adoption:
 ### 3.7 Claude skills
 
 Bring over a `.claude/skills/` tree so agents in the public repo get the same
-guided workflows. Minimum useful set for cscan:
+guided workflows. Minimum useful set for airlock:
 
-- `changelog-fragment/` — wraps `cscan changelog` / `towncrier create`.
-- `release/` — wraps `cscan release` (towncrier build → `cz bump` → tag).
+- `changelog-fragment/` — wraps `airlock changelog` / `towncrier create`.
+- `release/` — wraps `airlock release` (towncrier build → `cz bump` → tag).
 - `code-review/` and/or `pr-building/` — adapt memex's, minus the memex-specific
   ADR/Postgres axes.
 
@@ -350,7 +350,7 @@ them at the flattened `main` afterward, since flattening rewrites `main`.)
 
 ### 4.3 FUTURE — protected space to execute untrusted tests (Docker/VMs)
 
-*Not now — captured so the branch model has somewhere to grow into.* cscan's whole
+*Not now — captured so the branch model has somewhere to grow into.* airlock's whole
 premise is vetting **untrusted** repos/skills, and the roadmap
 (`docs/future-work.md` §2, "Dynamic-analysis escalation tier") already anticipates
 running targets in a disposable, network-isolated sandbox. When that lands, the
@@ -512,7 +512,7 @@ git checkout --orphan public-main                # new branch, no parents
 git add -A
 git commit -m "chore: initial public release
 
-code-scanner (cscan): shell-first, uv-native supply-chain & injection
+airlock-scan (airlock): shell-first, uv-native supply-chain & injection
 vetting toolkit. See docs/project-plan.md for architecture and status."
 # Review the tree one more time:
 git log --oneline            # should be exactly ONE commit
@@ -544,7 +544,7 @@ git push --force-with-lease origin main          # publish the flattened main
   them (they'll point into discarded history) or delete and re-tag the first
   public release from the flattened `main`. Recommend **deleting internal tags**
   and letting the first public release cut a fresh `v0.4.x`/`v1.0.0` tag via the
-  normal `cscan release` flow.
+  normal `airlock release` flow.
 
 ---
 
@@ -608,7 +608,7 @@ Do it in this order — scaffolding is reversible; flatten and go-public are not
 
 - **Flattening is irreversible for the public repo.** Keep a private mirror/backup
   of the full pre-flatten history (a private fork or an archived bundle:
-  `git bundle create code-scanner-prepublic.bundle --all`) before B2, in case the
+  `git bundle create airlock-scan-prepublic.bundle --all`) before B2, in case the
   internal history is ever needed for provenance.
 - **The scaffolding must land before flatten** so the single public commit is
   complete; anything added after flatten is just normal history on top — which is
@@ -616,5 +616,5 @@ Do it in this order — scaffolding is reversible; flatten and go-public are not
 - **Required status checks can only be selected after they've run once.** Push the
   workflows, let them run on a throwaway PR, then pick their check names in the
   ruleset (§5.2).
-- This plan intentionally **keeps cscan's stricter 3-day cooldown** rather than
+- This plan intentionally **keeps airlock's stricter 3-day cooldown** rather than
   matching memex's 5-day window — do not "align" it downward.
