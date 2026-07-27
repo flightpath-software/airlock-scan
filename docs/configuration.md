@@ -13,8 +13,8 @@ you override them from a config file or environment variables. Editing
 Later sources win over earlier ones:
 
 1. **Built-in defaults** — in `config.py` (`Config` / `LLMConfig` / …).
-2. **Project config** — a `[tool.airlock]` table in the project's `pyproject.toml`
-   (repo-level defaults, committed with the project).
+2. **Project config** — a `[tool.airlock]` table in a `pyproject.toml`, found by
+   walking up from the **current working directory**.
 3. **User config** — `~/airlock/config.toml` (your machine-wide preferences).
 4. **Environment variables** — `AIRLOCK_*` (per-shell / CI; highest priority).
 
@@ -25,6 +25,15 @@ project's `pyproject.toml`, which beats the built-in default.
 > Because the store-root location is needed to *find* the user config, set
 > `store_root` itself via `AIRLOCK_STORE_ROOT` or `pyproject.toml`, not inside
 > `~/airlock/config.toml`.
+
+> ⚠️ **The `pyproject.toml` source rarely does what you expect.** `bin/airlock`
+> and `scripts/vet.sh` `cd` into the airlock checkout before running the helper,
+> so the table they find is *airlock's own* `pyproject.toml` — not the scanned
+> target's, and not your project's. Prefer `~/airlock/config.toml` or `AIRLOCK_*`.
+> Tracked in [#45](https://github.com/flightpath-software/airlock-scan/issues/45).
+>
+> The **scanned target's** `pyproject.toml` is deliberately never read — an
+> untrusted repo must not be able to reconfigure the scanner vetting it.
 
 ## Your API key: the *name* vs the *value*
 
@@ -46,9 +55,16 @@ export OPENAI_API_KEY="sk-...your real key..."
 Then `source ~/.zshrc` (or open a new terminal).
 
 > **Don't paste the key into `api_key_env`.** That field is the variable's
-> *name*, not the key. Airlock validates it and rejects a secret-shaped value at
-> startup (it must match `^[A-Za-z_][A-Za-z0-9_]*$`), so a mistaken paste fails
-> fast instead of leaking.
+> *name*, not the key. Airlock validates it at config load — the whole value must
+> be an environment-variable identifier (letters, digits, underscores; no leading
+> digit) — and rejects anything else with an error that doesn't print the value.
+>
+> That catches the common key formats, which contain characters a variable name
+> can't hold (`sk-…`, `xoxb-…`, AWS secret keys). It does **not** catch tokens
+> that happen to be identifier-shaped (`ghp_…`, `hf_…`, `AKIA…`): those pass
+> validation and would still be echoed by the "no API key" message below. Treat
+> the validation as a safety net, not a guarantee — the field is for the *name*.
+> Tracked in [#41](https://github.com/flightpath-software/airlock-scan/issues/41).
 
 No key at all? Use `--fake` (offline dummy backend) or `provider = "local"`
 (a local OpenAI-compatible server such as Ollama) — neither needs a key.
@@ -76,34 +92,54 @@ model = "gpt-4o"
 
 ### A commented reference template
 
-Everything below is **commented out** — copy the file and uncomment only the
-lines you actually want to change (uncommenting a line that already matches the
-default just pins it, so leave those alone):
+Every *key* below is commented out — uncomment only the lines you actually want
+to change (uncommenting a line that already matches the default just pins it, so
+leave those alone).
+
+**Leave the `[section]` headers uncommented.** A key without its header lands in
+the top-level table, where it is silently ignored — no error, no effect:
+
+```toml
+# [llm]
+model = "gpt-4o"    # ← ignored: the [llm] header is commented out
+```
 
 ```toml
 # ~/airlock/config.toml
-# [llm]
+# store_root = "~/airlock"                       # where runs and reports are written
+# export_requires_optin = true
+
+[llm]
 # provider      = "openai"                      # label only; "local" switches to the local preset
 # base_url      = "https://api.openai.com/v1"
 # model         = "gpt-4o-mini"
 # api_key_env   = "OPENAI_API_KEY"              # NAME of the env var holding the key
 # local_base_url = "http://localhost:11434/v1"  # used when provider = "local"
 # local_model    = "qwen2.5-coder"              # used when provider = "local"
-# redact_tier1_secrets = true                   # mask Tier-1 secrets before any Tier-2 call
+# redact_tier1_secrets = true                   # NOT YET WIRED UP — see #42
 # temperature    = 0.0
 # request_timeout = 60
-# max_file_bytes  = 200000                       # skip/chunk files larger than this
+# max_file_bytes  = 200000                       # per-file review cap; the rest is truncated (#44)
 # max_files       = 5                            # per-run cost/safety cap
 # gate_only_on_suspicious = true
 
-# [persistence]
+[persistence]
+# files_are_source_of_truth = true               # SQLite is a derived index
+# sqlite_index = true
 # ingested_bytes_ttl_days = 30
 
-# [canary]
+[canary]
 # harness_sets = ["claude_code", "codex_cli", "gemini_cli", "cursor", "opencode", "zed", "cline", "warp"]
 # agnostic_set = true
 # bisect_on_fire = true
 ```
+
+Two fields above don't currently do what their names suggest — noted inline and
+tracked in [#42](https://github.com/flightpath-software/airlock-scan/issues/42)
+(`redact_tier1_secrets` has no consumer, so Tier-1 secrets are **not** masked
+before a Tier-2 call) and
+[#44](https://github.com/flightpath-software/airlock-scan/issues/44)
+(`max_file_bytes` truncates: content past the cap gets no Tier-2 review).
 
 ## Environment variables
 
@@ -114,7 +150,7 @@ common ones and take top priority:
 | Env var | Overrides | Default |
 |---|---|---|
 | `AIRLOCK_STORE_ROOT` | `store_root` | `~/airlock` |
-| `AIRLOCK_WRITE_INTO_TARGET` | `write_into_target` | `false` |
+| `AIRLOCK_WRITE_INTO_TARGET` | `write_into_target` | `false` — parsed but **not yet read by any command** ([#43](https://github.com/flightpath-software/airlock-scan/issues/43)) |
 | `AIRLOCK_LLM_PROVIDER` | `llm.provider` | `openai` |
 | `AIRLOCK_LLM_BASE_URL` | `llm.base_url` | `https://api.openai.com/v1` |
 | `AIRLOCK_LLM_MODEL` | `llm.model` | `gpt-4o-mini` |
@@ -183,8 +219,10 @@ export AIRLOCK_STORE_ROOT="/data/airlock-runs"
 ## Verify
 
 ```bash
-echo $GROQ_API_KEY            # confirms the shell has the secret
-airlock-helper quarantine <some-dir>   # or: airlock  → runs a Tier-2 review
+[ -n "$GROQ_API_KEY" ] && echo "key is set"   # confirms without printing the secret
+airlock-helper quarantine <some-dir>          # or: airlock  → runs a Tier-2 review
 ```
-If the key isn't set you'll see `error: no API key in $GROQ_API_KEY` — that
-message prints the variable's *name*, never a value.
+If the key isn't set you'll see `error: no API key in $GROQ_API_KEY`. That
+message prints whatever you configured as `api_key_env` — which is why that
+field must hold the variable's *name* and never the key itself (see the warning
+above and [#41](https://github.com/flightpath-software/airlock-scan/issues/41)).
