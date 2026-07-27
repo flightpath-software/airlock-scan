@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import sqlite3
 
-from code_scanner.database import build_index, rebuild_index
-from code_scanner.store import RunStore, new_run_id
+from airlock_scan.database import build_index, rebuild_index
+from airlock_scan.store import RunStore, new_run_id
 
 
 def _populate(store: RunStore) -> None:

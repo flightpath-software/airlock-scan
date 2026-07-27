@@ -21,10 +21,10 @@ case "$cmd" in
   run)
     target="${1:?run requires <target>}"; out="${2:?run requires <out_dir>}"
     out_file="${out}/semgrep.sarif"
-    # Always run cscan's bundled taint pack; add the auto registry on top when
+    # Always run airlock's bundled taint pack; add the auto registry on top when
     # reachable. The custom rules are the deterministic, self-contained core and
     # must never be dropped just because a local dir exists.
-    local_rules="${CSCAN_CONFIG_DIR}/semgrep"
+    local_rules="${AIRLOCK_CONFIG_DIR}/semgrep"
     config_arg=(--config auto)
     if compgen -G "${local_rules}/*.y*ml" >/dev/null 2>&1; then
       config_arg+=(--config "$local_rules")

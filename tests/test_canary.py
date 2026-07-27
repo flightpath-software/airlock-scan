@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from code_scanner.canary import attribute, build_canary_set, load_signatures
+from airlock_scan.canary import attribute, build_canary_set, load_signatures
 
 
 def test_dataset_loads():

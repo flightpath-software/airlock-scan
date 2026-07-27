@@ -16,7 +16,7 @@ version_ge() {
   [ "$(printf '%s\n%s\n' "$2" "$1" | sort -V | head -n1)" = "$2" ]
 }
 
-ui_header "cscan • doctor"
+ui_header "airlock • doctor"
 
 # --- core tooling ----------------------------------------------------------
 if have uv; then
@@ -36,7 +36,7 @@ have npx  && log_ok "node/npx present (optional)" || log_warn "node/npx missing 
 
 # --- scanners --------------------------------------------------------------
 ui_note "Scanners:"
-for id in "${CSCAN_DEFAULT_SCANNERS[@]}" "${CSCAN_OPTIONAL_SCANNERS[@]}"; do
+for id in "${AIRLOCK_DEFAULT_SCANNERS[@]}" "${AIRLOCK_OPTIONAL_SCANNERS[@]}"; do
   adapter="$(scanner_adapter "$id")"
   [ -f "$adapter" ] || continue
   if bash "$adapter" detect >/dev/null 2>&1; then
@@ -48,7 +48,7 @@ done
 
 # --- OSV supply-chain audit of locked dependencies -------------------------
 ui_note "OSV audit of uv.lock (the versions uv will actually install):"
-lock="${CSCAN_ROOT}/uv.lock"
+lock="${AIRLOCK_ROOT}/uv.lock"
 if [ ! -f "$lock" ]; then
   log_warn "  no uv.lock yet — run 'uv sync' first"
 elif ! have python3; then

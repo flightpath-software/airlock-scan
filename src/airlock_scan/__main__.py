@@ -1,10 +1,10 @@
-"""Enable ``python -m code_scanner`` (delegates to the CLI)."""
+"""Enable ``python -m airlock_scan`` (delegates to the CLI)."""
 
 from __future__ import annotations
 
 import sys
 
-from code_scanner.cli import main
+from airlock_scan.cli import main
 
 if __name__ == "__main__":
     sys.exit(main())

@@ -7,7 +7,7 @@
 Report privately through GitHub's **Private Vulnerability Reporting**:
 
 1. Go to the repository's **Security** tab → **Report a vulnerability**
-   (direct link: <https://github.com/flightpath-software/code-scanner/security/advisories/new>).
+   (direct link: <https://github.com/flightpath-software/airlock-scan/security/advisories/new>).
 2. Describe the issue, the affected version/commit, and — if possible — reproduction steps and impact.
 
 This opens a private security advisory visible only to you and the maintainers.
@@ -25,7 +25,7 @@ far more likely than a decision to ignore a report.
 
 ## Supported versions
 
-`code-scanner` is pre-1.0 and evolving. Security fixes are applied to the **latest release** (and the default
+`airlock-scan` is pre-1.0 and evolving. Security fixes are applied to the **latest release** (and the default
 branch); older pre-1.0 versions are not separately patched. Once the project reaches 1.0 this policy will
 define a supported range.
 
@@ -36,13 +36,13 @@ define a supported range.
 
 ## Security posture
 
-`code-scanner` is a tool for vetting **untrusted** repositories and skills, so its own supply chain and
+`airlock-scan` is a tool for vetting **untrusted** repositories and skills, so its own supply chain and
 handling of untrusted input are held to a visible, checkable standard — not a promise. Here's where we are;
 all of it is verifiable in this repository.
 
 ### In place today
 
-- **The deterministic tier is authoritative and never executes the target.** `cscan` runs non-LLM scanners
+- **The deterministic tier is authoritative and never executes the target.** `airlock` runs non-LLM scanners
   (gitleaks, semgrep, osv-scanner, guarddog, heckler) against a target as *data*, normalizes their output into
   one `Finding` model, and applies a severity gate — without running the scanned code. That core is, by
   construction, immune to prompt injection, and the advisory LLM tier can **never clear or downgrade a Tier-1
@@ -50,7 +50,7 @@ all of it is verifiable in this repository.
 - **Untrusted content is read in a quarantine.** The optional Tier-2 reviewer is a Dual-LLM, no-functional-tools,
   one-file-per-call design with canary (NOOP) tripwires; any tool invocation is, by construction, evidence of an
   attempted injection and is logged. Tier-1-detected secrets are redacted before any Tier-2 call.
-- **Reports stay local to the user.** Artifacts are written to a user-local store (`~/cscan/`), never into the
+- **Reports stay local to the user.** Artifacts are written to a user-local store (`~/airlock/`), never into the
   scanned repo. The only data that leaves the machine is a deliberately-configured Tier-2 cloud call (avoidable
   with the local backend) or an explicit export (see `docs/adr/0002-local-only-reports.md`).
 - **Dependency cooldown.** `uv` is pinned to a rolling **3-day** window (`exclude-newer = "3 days"`), so a
@@ -78,14 +78,14 @@ all of it is verifiable in this repository.
 
 ## Scope
 
-This policy covers the `code-scanner` package and this repository. Vulnerabilities in third-party dependencies
-or in the external scanners `cscan` orchestrates should be reported upstream; if such an issue affects
-`code-scanner` users, we welcome a heads-up via the private channel above so we can pin or patch.
+This policy covers the `airlock-scan` package and this repository. Vulnerabilities in third-party dependencies
+or in the external scanners `airlock` orchestrates should be reported upstream; if such an issue affects
+`airlock-scan` users, we welcome a heads-up via the private channel above so we can pin or patch.
 
 ## No warranty
 
 The security measures described here are provided on a **best-effort basis** to improve the project's
 trustworthiness. They are **not a guarantee** of security, and nothing in this policy creates a warranty or
-liability beyond what the license permits. `code-scanner` is distributed **"AS IS"** under the
+liability beyond what the license permits. `airlock-scan` is distributed **"AS IS"** under the
 [Apache-2.0 LICENSE](LICENSE) — see the **Disclaimer of Warranty (§7)** and **Limitation of Liability (§8)**.
 You remain responsible for assessing the software's suitability and security for your own use.

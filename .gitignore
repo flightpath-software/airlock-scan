@@ -1,12 +1,12 @@
 # ---------------------------------------------------------------------------
-# code-scanner .gitignore
+# airlock-scan .gitignore
 # Combined templates: macOS + Windows + JetBrains/PyCharm + Python
 # ---------------------------------------------------------------------------
 
 # === Project-specific ======================================================
-# Per-target scan results written by `cscan` (kept out of this repo).
-.cscan/
-**/.cscan/
+# Per-target scan results written by `airlock` (kept out of this repo).
+.airlock/
+**/.airlock/
 # Aggregated reports / scratch output.
 /reports/
 *.sarif

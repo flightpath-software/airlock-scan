@@ -1,1 +1,0 @@
-Add CI security scanning for the project's own supply chain: CodeQL (Python SAST), Bandit, `pip-audit` (OSV dependency audit), and a hardened, checksum-pinned gitleaks secret scan — running on pull requests, on pushes to `main`/`develop`/`staging`, and weekly. CI also now enforces `uv lock --locked` so the lockfile can't drift from the 3-day dependency cooldown.

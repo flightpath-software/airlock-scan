@@ -11,7 +11,7 @@ metrics that matter for this project:
   harness.
 
 The corpus + metrics math are deterministic; the *backend* is pluggable, so the
-same harness scores a real model (``cscan-helper eval``) or, offline, a baseline
+same harness scores a real model (``airlock-helper eval``) or, offline, a baseline
 ``FakeBackend`` or the naive :func:`heuristic_responder` (which illustrates how a
 "fires on any tool mention" model over-defends on the trigger corpus).
 """
@@ -23,7 +23,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-from code_scanner.llm_backend import BackendResponse, ToolCall
+from airlock_scan.llm_backend import BackendResponse, ToolCall
 
 LABELS_FILE = "labels.json"
 _LABELS = {"clean", "injection"}
@@ -175,7 +175,7 @@ def render_eval_markdown(report: EvalReport) -> str:
     m = report.as_dict()["metrics"]
     a = m["attribution"]
     lines = [
-        "# cscan evaluation",
+        "# airlock evaluation",
         "",
         "| Metric | Value |",
         "| --- | --- |",

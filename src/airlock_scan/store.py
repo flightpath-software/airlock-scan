@@ -1,7 +1,7 @@
 """User-local run store — the file-primary, portable source of truth.
 
 Every pipeline invocation gets a directory under the configured store root
-(default ``~/cscan/<run-id>/``) containing only human-readable / inspectable
+(default ``~/airlock/<run-id>/``) containing only human-readable / inspectable
 files:
 
     <store_root>/<run-id>/
@@ -14,7 +14,7 @@ files:
       index.db               DERIVED SQLite index (rebuildable from the above)
 
 The SQLite index is *derived* and never authoritative: it can be deleted and
-rebuilt from these files alone (see :mod:`code_scanner.database`). Nothing here
+rebuilt from these files alone (see :mod:`airlock_scan.database`). Nothing here
 is ever written into the scanned repo.
 """
 
@@ -75,7 +75,7 @@ class RunStore:
         gate: str = "high",
         backend: str = "anthropic",
         model: str = "",
-        cscan_version: str = "",
+        airlock_version: str = "",
         run_id: str | None = None,
         now: datetime | None = None,
     ) -> "RunStore":
@@ -94,7 +94,7 @@ class RunStore:
                 "gate": gate,
                 "backend": backend,
                 "model": model,
-                "cscan_version": cscan_version,
+                "airlock_version": airlock_version,
             }
         )
         return store
@@ -103,7 +103,7 @@ class RunStore:
     def open(cls, run_dir: Path) -> "RunStore":
         run_dir = run_dir.expanduser()
         if not (run_dir / MANIFEST_NAME).is_file():
-            raise FileNotFoundError(f"not a cscan run directory (no manifest): {run_dir}")
+            raise FileNotFoundError(f"not a airlock run directory (no manifest): {run_dir}")
         return cls(run_dir)
 
     # --- paths -------------------------------------------------------------

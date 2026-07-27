@@ -1,4 +1,4 @@
-# Code owners for code-scanner.
+# Code owners for airlock-scan.
 #
 # When branch protection enables "Require review from Code Owners", a PR touching
 # a matching path needs an approving review from one of the listed owners.

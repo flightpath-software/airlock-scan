@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from code_scanner.findings import Finding, Severity
-from code_scanner.report import _short_rule, build_report, render_markdown
+from airlock_scan.findings import Finding, Severity
+from airlock_scan.report import _short_rule, build_report, render_markdown
 
 
 def test_short_rule_dedupes_and_truncates():
@@ -23,7 +23,7 @@ def test_render_markdown_table_and_escaping():
     report = build_report(findings, gate=Severity.HIGH)
     md = render_markdown(report, target="/tmp/repo", verdict_label="BLOCK", generated="now")
 
-    assert md.startswith("# cscan report")
+    assert md.startswith("# airlock report")
     assert "- **Target:** `/tmp/repo`" in md
     assert "- **Verdict:** BLOCK" in md
     assert "| Severity | Tool | Rule | Location | Message |" in md

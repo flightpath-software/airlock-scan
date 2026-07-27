@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import json
 
-from code_scanner.cli import main
-from code_scanner.findings import Finding, Severity
-from code_scanner.report import build_report, render_markdown
-from code_scanner.store import RunStore
+from airlock_scan.cli import main
+from airlock_scan.findings import Finding, Severity
+from airlock_scan.report import build_report, render_markdown
+from airlock_scan.store import RunStore
 
 TIER1_SARIF = {
     "version": "2.1.0",
@@ -16,7 +16,7 @@ TIER1_SARIF = {
             "tool": {"driver": {"name": "semgrep"}},
             "results": [
                 {
-                    "ruleId": "cscan-untrusted-input-to-shell",
+                    "ruleId": "airlock-untrusted-input-to-shell",
                     "level": "error",
                     "message": {"text": "untrusted input into shell"},
                     "locations": [
@@ -39,8 +39,8 @@ def test_vet_merges_tier1_and_tier2(tmp_path, monkeypatch):
     results.mkdir()
     (results / "semgrep.sarif").write_text(json.dumps(TIER1_SARIF), encoding="utf-8")
 
-    store_root = tmp_path / "cscan"
-    monkeypatch.setenv("CSCAN_STORE_ROOT", str(store_root))
+    store_root = tmp_path / "airlock"
+    monkeypatch.setenv("AIRLOCK_STORE_ROOT", str(store_root))
 
     # --fake => clean Tier-2 verdicts; Tier-1 has a HIGH finding => BLOCK => exit 1
     rc = main(["vet", str(target), "--tier1-results", str(results), "--gate", "high", "--fake"])
@@ -53,7 +53,7 @@ def test_vet_merges_tier1_and_tier2(tmp_path, monkeypatch):
 
     md = store.report_md_path.read_text(encoding="utf-8")
     assert "## Tier-1 findings" in md
-    assert "cscan-untrusted-input-to-shell" in md
+    assert "airlock-untrusted-input-to-shell" in md
     assert "Tier-2 reviewer (advisory)" in md
 
 
@@ -61,7 +61,7 @@ def test_vet_runs_tier2_only_without_tier1(tmp_path, monkeypatch):
     target = tmp_path / "repo"
     target.mkdir()
     (target / "a.md").write_text("clean", encoding="utf-8")
-    monkeypatch.setenv("CSCAN_STORE_ROOT", str(tmp_path / "cscan"))
+    monkeypatch.setenv("AIRLOCK_STORE_ROOT", str(tmp_path / "airlock"))
 
     rc = main(["vet", str(target), "--fake"])  # no Tier-1, clean Tier-2 => CLEAN => 0
     assert rc == 0

@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import re
 
-from code_scanner.canary import build_canary_set
-from code_scanner.llm_backend import BackendResponse, FakeBackend, ToolCall
-from code_scanner.quarantine import (
+from airlock_scan.canary import build_canary_set
+from airlock_scan.llm_backend import BackendResponse, FakeBackend, ToolCall
+from airlock_scan.quarantine import (
     MIN_BISECT_LINES,
     REDACTION_MARK,
     STATUS_HUMAN_REVIEW,
@@ -20,7 +20,7 @@ from code_scanner.quarantine import (
     sanitize_tool_name,
     spotlight,
 )
-from code_scanner.store import RunStore
+from airlock_scan.store import RunStore
 
 _OPENAI_NAME = re.compile(r"^[a-zA-Z0-9_-]+$")
 
@@ -36,7 +36,7 @@ def test_all_emitted_tool_names_are_api_valid():
     # to match the OpenAI function-name pattern, or the API rejects the request.
     import re
 
-    from code_scanner.canary import build_canary_set
+    from airlock_scan.canary import build_canary_set
 
     pattern = re.compile(r"^[a-zA-Z0-9_-]+$")
     every_harness = build_canary_set(
@@ -62,7 +62,7 @@ def test_redact_masks_secrets():
 
 def test_all_generated_tool_names_are_api_safe():
     # Includes codex_cli's multi_tool_use.parallel, which has an illegal dot.
-    from code_scanner.canary import build_canary_set
+    from airlock_scan.canary import build_canary_set
 
     every = build_canary_set(
         ("claude_code", "codex_cli", "gemini_cli", "cursor", "opencode", "zed", "cline", "warp"),

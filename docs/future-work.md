@@ -73,9 +73,9 @@ that are relevant but not yet scheduled — not a commitment.
 
 ## 6. Shareable report bundles / signing
 
-- **What:** A `cscan export` that packages a run's files into a portable,
+- **What:** A `airlock export` that packages a run's files into a portable,
   optionally-signed bundle (the index is rebuilt on the other side via
-  `cscan index rebuild`).
+  `airlock index rebuild`).
 - **Why deferred:** Core file-primary persistence + rebuildable index (M0) is the
   prerequisite; signing/packaging is a follow-on convenience.
 - **Pull-in trigger:** Teams routinely sharing verdicts and wanting integrity

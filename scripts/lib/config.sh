@@ -1,22 +1,22 @@
 # shellcheck shell=bash
-# Central configuration for the cscan shell layer. Source after common.sh.
+# Central configuration for the airlock shell layer. Source after common.sh.
 
-: "${CSCAN_ROOT:?source scripts/lib/common.sh first}"
+: "${AIRLOCK_ROOT:?source scripts/lib/common.sh first}"
 
 # --- paths -----------------------------------------------------------------
-CSCAN_SCRIPTS_DIR="${CSCAN_ROOT}/scripts"
-CSCAN_SCANNERS_DIR="${CSCAN_ROOT}/scanners"
-CSCAN_CONFIG_DIR="${CSCAN_ROOT}/config"
-export CSCAN_SCRIPTS_DIR CSCAN_SCANNERS_DIR CSCAN_CONFIG_DIR
+AIRLOCK_SCRIPTS_DIR="${AIRLOCK_ROOT}/scripts"
+AIRLOCK_SCANNERS_DIR="${AIRLOCK_ROOT}/scanners"
+AIRLOCK_CONFIG_DIR="${AIRLOCK_ROOT}/config"
+export AIRLOCK_SCRIPTS_DIR AIRLOCK_SCANNERS_DIR AIRLOCK_CONFIG_DIR
 
 # --- defaults (override via environment) -----------------------------------
 # Name of the per-target directory where raw scanner output is written.
-: "${CSCAN_RESULTS_DIRNAME:=.cscan}"
+: "${AIRLOCK_RESULTS_DIRNAME:=.airlock}"
 # Severity gate: report fails (non-zero) if any finding is at/above this level.
-: "${CSCAN_GATE:=high}"
+: "${AIRLOCK_GATE:=high}"
 # Run heckler against dependency directories too (slower). 0/1.
-: "${CSCAN_HECKLER_SCAN_DEPS:=0}"
-export CSCAN_RESULTS_DIRNAME CSCAN_GATE CSCAN_HECKLER_SCAN_DEPS
+: "${AIRLOCK_HECKLER_SCAN_DEPS:=0}"
+export AIRLOCK_RESULTS_DIRNAME AIRLOCK_GATE AIRLOCK_HECKLER_SCAN_DEPS
 
 # --- supply-chain cooldown -------------------------------------------------
 # Ensure uvx-run scanners (semgrep, guarddog, heckler) honor the same 3-day
@@ -27,10 +27,10 @@ export UV_EXCLUDE_NEWER
 # --- scanner registry ------------------------------------------------------
 # Default scanners run unless the user narrows the selection. Each id maps to
 # an adapter at scanners/<id>.sh implementing: detect | install | run | name.
-CSCAN_DEFAULT_SCANNERS=(gitleaks semgrep osv-scanner guarddog heckler)
+AIRLOCK_DEFAULT_SCANNERS=(gitleaks semgrep osv-scanner guarddog heckler)
 # Optional adapters (off by default; e.g. require Node, or are user-provided).
-CSCAN_OPTIONAL_SCANNERS=(anti-trojan-source)
-export CSCAN_DEFAULT_SCANNERS CSCAN_OPTIONAL_SCANNERS
+AIRLOCK_OPTIONAL_SCANNERS=(anti-trojan-source)
+export AIRLOCK_DEFAULT_SCANNERS AIRLOCK_OPTIONAL_SCANNERS
 
 # Path to a scanner adapter by id.
-scanner_adapter() { printf '%s/%s.sh' "$CSCAN_SCANNERS_DIR" "$1"; }
+scanner_adapter() { printf '%s/%s.sh' "$AIRLOCK_SCANNERS_DIR" "$1"; }

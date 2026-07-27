@@ -1,13 +1,13 @@
-"""Configuration for the cscan vetting pipeline (the ``[tool.cscan]`` surface).
+"""Configuration for the airlock vetting pipeline (the ``[tool.airlock]`` surface).
 
 Resolution precedence (later wins):
 
 1. Built-in defaults (see :class:`Config`).
-2. ``[tool.cscan]`` in a project ``pyproject.toml`` (repo-level defaults).
+2. ``[tool.airlock]`` in a project ``pyproject.toml`` (repo-level defaults).
 3. A user config file at ``<store_root>/config.toml`` (machine-wide prefs).
-4. Environment overrides (``CSCAN_*``).
+4. Environment overrides (``AIRLOCK_*``).
 
-The store root defaults to ``~/cscan`` — deliberately *not* a dotdir, so a user
+The store root defaults to ``~/airlock`` — deliberately *not* a dotdir, so a user
 can find reports easily when something fires. Nothing here reads the target
 repo; this only configures where output goes and how the LLM tier behaves.
 """
@@ -19,7 +19,7 @@ import tomllib
 from dataclasses import dataclass, field, fields, replace
 from pathlib import Path
 
-DEFAULT_STORE_ROOT = "~/cscan"
+DEFAULT_STORE_ROOT = "~/airlock"
 
 # Harness ids registered as canary decoy sets by default (see data/harness_signatures.*).
 _DEFAULT_HARNESS_SETS = (
@@ -65,7 +65,7 @@ class LLMConfig:
     temperature: float = 0.0
     request_timeout: int = 60
     max_file_bytes: int = 200_000  # skip/chunk files larger than this
-    max_files: int = 5  # safety/cost cap; raise with CSCAN_LLM_MAX_FILES
+    max_files: int = 5  # safety/cost cap; raise with AIRLOCK_LLM_MAX_FILES
     gate_only_on_suspicious: bool = True
 
     @property
@@ -91,7 +91,7 @@ class CanaryConfig:
 
 @dataclass(frozen=True, slots=True)
 class Config:
-    """Top-level cscan configuration."""
+    """Top-level airlock configuration."""
 
     store_root: Path = field(default_factory=lambda: Path(DEFAULT_STORE_ROOT).expanduser())
     write_into_target: bool = False
@@ -122,7 +122,7 @@ def _coerce_section(section_cls: type, raw: dict) -> dict:
 
 
 def _apply_table(cfg: Config, table: dict) -> Config:
-    """Apply a ``[tool.cscan]`` table (already extracted) onto ``cfg``."""
+    """Apply a ``[tool.airlock]`` table (already extracted) onto ``cfg``."""
     top: dict = {}
     if "store_root" in table:
         top["store_root"] = Path(str(table["store_root"])).expanduser()
@@ -140,38 +140,38 @@ def _apply_table(cfg: Config, table: dict) -> Config:
     return replace(cfg, **top)
 
 
-def _read_cscan_table(toml_path: Path) -> dict:
-    """Return the ``[tool.cscan]`` table from a pyproject-style file, or {}."""
+def _read_airlock_table(toml_path: Path) -> dict:
+    """Return the ``[tool.airlock]`` table from a pyproject-style file, or {}."""
     try:
         with toml_path.open("rb") as fh:
             data = tomllib.load(fh)
     except (OSError, tomllib.TOMLDecodeError):
         return {}
-    return (data.get("tool", {}) or {}).get("cscan", {}) or {}
+    return (data.get("tool", {}) or {}).get("airlock", {}) or {}
 
 
 def _read_user_config(toml_path: Path) -> dict:
-    """User config file: a bare cscan table (no [tool.cscan] nesting required)."""
+    """User config file: a bare airlock table (no [tool.airlock] nesting required)."""
     try:
         with toml_path.open("rb") as fh:
             data = tomllib.load(fh)
     except (OSError, tomllib.TOMLDecodeError):
         return {}
-    # Accept either a top-level table or a nested [tool.cscan] for convenience.
-    nested = (data.get("tool", {}) or {}).get("cscan")
+    # Accept either a top-level table or a nested [tool.airlock] for convenience.
+    nested = (data.get("tool", {}) or {}).get("airlock")
     return nested if isinstance(nested, dict) else data
 
 
 # Flat env overrides → (section or None, attribute, caster).
 _ENV_MAP: dict[str, tuple[str | None, str, type]] = {
-    "CSCAN_STORE_ROOT": (None, "store_root", Path),
-    "CSCAN_WRITE_INTO_TARGET": (None, "write_into_target", bool),
-    "CSCAN_LLM_PROVIDER": ("llm", "provider", str),
-    "CSCAN_LLM_BASE_URL": ("llm", "base_url", str),
-    "CSCAN_LLM_MODEL": ("llm", "model", str),
-    "CSCAN_LLM_API_KEY_ENV": ("llm", "api_key_env", str),
-    "CSCAN_LLM_LOCAL_MODEL": ("llm", "local_model", str),
-    "CSCAN_LLM_MAX_FILES": ("llm", "max_files", int),
+    "AIRLOCK_STORE_ROOT": (None, "store_root", Path),
+    "AIRLOCK_WRITE_INTO_TARGET": (None, "write_into_target", bool),
+    "AIRLOCK_LLM_PROVIDER": ("llm", "provider", str),
+    "AIRLOCK_LLM_BASE_URL": ("llm", "base_url", str),
+    "AIRLOCK_LLM_MODEL": ("llm", "model", str),
+    "AIRLOCK_LLM_API_KEY_ENV": ("llm", "api_key_env", str),
+    "AIRLOCK_LLM_LOCAL_MODEL": ("llm", "local_model", str),
+    "AIRLOCK_LLM_MAX_FILES": ("llm", "max_files", int),
 }
 
 
@@ -211,16 +211,16 @@ def load_config(
     environ = os.environ if environ is None else environ
     cfg = Config()
 
-    # 2. pyproject [tool.cscan]
+    # 2. pyproject [tool.airlock]
     pyproject = pyproject or _find_pyproject(Path.cwd())
     if pyproject and pyproject.is_file():
-        cfg = _apply_table(cfg, _read_cscan_table(pyproject))
+        cfg = _apply_table(cfg, _read_airlock_table(pyproject))
 
     # Determine store_root early so the user config path can depend on it,
     # honoring an env override of the store root before reading the user file.
     store_root = cfg.store_root
-    if "CSCAN_STORE_ROOT" in environ:
-        store_root = Path(environ["CSCAN_STORE_ROOT"]).expanduser()
+    if "AIRLOCK_STORE_ROOT" in environ:
+        store_root = Path(environ["AIRLOCK_STORE_ROOT"]).expanduser()
 
     # 3. user config at <store_root>/config.toml
     user_cfg = store_root / "config.toml"
