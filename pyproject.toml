@@ -1,5 +1,5 @@
 [project]
-name = "code-scanner"
+name = "airlock-scan"
 version = "0.4.0"
 description = "Shell-first, uv-native toolkit to scan repositories for supply-chain and injection attacks before install or before granting LLM access."
 readme = "README.md"
@@ -22,9 +22,9 @@ dependencies = [
 # so pyproject.toml and uv.lock stay in sync.
 
 [project.scripts]
-# Thin Python helper invoked by the shell layer (e.g. `uv run cscan-helper ...`).
-# The primary user-facing command is the gum launcher at `bin/cscan`.
-cscan-helper = "code_scanner.cli:main"
+# Thin Python helper invoked by the shell layer (e.g. `uv run airlock-helper ...`).
+# The primary user-facing command is the gum launcher at `bin/airlock`.
+airlock-helper = "airlock_scan.cli:main"
 
 [build-system]
 requires = ["uv_build>=0.11.8,<0.12"]
@@ -118,7 +118,7 @@ major_version_zero = true
 # towncrier owns CHANGELOG.md, so commitizen must not also write it.
 update_changelog_on_bump = false
 version_files = [
-    "src/code_scanner/__init__.py:__version__",
+    "src/airlock_scan/__init__.py:__version__",
 ]
 bump_message = "bump: $current_version \u2192 $new_version"
 

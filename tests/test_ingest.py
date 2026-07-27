@@ -1,11 +1,11 @@
-"""Test the `ingest` command: scanner output -> a user-local ~/cscan run."""
+"""Test the `ingest` command: scanner output -> a user-local ~/airlock run."""
 
 from __future__ import annotations
 
 import json
 
-from code_scanner.cli import main
-from code_scanner.store import RunStore
+from airlock_scan.cli import main
+from airlock_scan.store import RunStore
 
 SARIF = {
     "version": "2.1.0",
@@ -35,8 +35,8 @@ def test_ingest_writes_run_to_store(tmp_path, monkeypatch):
     (results / "semgrep.sarif").write_text(json.dumps(SARIF), encoding="utf-8")
 
     # point the user-local store at a temp dir
-    store_root = tmp_path / "cscan"
-    monkeypatch.setenv("CSCAN_STORE_ROOT", str(store_root))
+    store_root = tmp_path / "airlock"
+    monkeypatch.setenv("AIRLOCK_STORE_ROOT", str(store_root))
 
     rc = main(["ingest", str(results), "--target", "/tmp/suspicious-skill", "--gate", "high"])
     # one MEDIUM finding, gate=high -> WARN -> installable -> exit 0
@@ -55,7 +55,7 @@ def test_ingest_writes_run_to_store(tmp_path, monkeypatch):
     md = store.report_md_path.read_text(encoding="utf-8")
     assert "/tmp/suspicious-skill" in md
     assert "audit.dynamic-urllib-use-detected" in md  # shortened
-    assert "# cscan report" in md
+    assert "# airlock report" in md
 
     # manifest records the target; index db built
     assert store.read_manifest()["target"] == "/tmp/suspicious-skill"
@@ -78,7 +78,7 @@ def test_ingest_blocks_on_high(tmp_path, monkeypatch):
     results = tmp_path / "r"
     results.mkdir()
     (results / "gitleaks.sarif").write_text(json.dumps(high), encoding="utf-8")
-    monkeypatch.setenv("CSCAN_STORE_ROOT", str(tmp_path / "cscan"))
+    monkeypatch.setenv("AIRLOCK_STORE_ROOT", str(tmp_path / "airlock"))
 
     rc = main(["ingest", str(results), "--gate", "high"])
     assert rc == 1  # HIGH finding at the gate -> BLOCK -> exit 1

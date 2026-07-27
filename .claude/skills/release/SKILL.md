@@ -1,9 +1,9 @@
 ---
 name: release
-description: Cut a release of code-scanner — compile the Towncrier changelog, bump the version per Conventional Commits, and tag. Use when asked to cut, tag, or ship a release, bump the version, or prepare release notes for this repo.
+description: Cut a release of airlock-scan — compile the Towncrier changelog, bump the version per Conventional Commits, and tag. Use when asked to cut, tag, or ship a release, bump the version, or prepare release notes for this repo.
 ---
 
-# Cut a release (code-scanner)
+# Cut a release (airlock-scan)
 
 The maintainer runbook for turning merged work into a tagged release. Fragments
 accumulate in [`changelog.d/`](../../../changelog.d/) as PRs merge (see the
@@ -12,7 +12,7 @@ accumulate in [`changelog.d/`](../../../changelog.d/) as PRs merge (see the
 **Division of labor:** Towncrier owns `CHANGELOG.md`; commitizen owns
 versioning/tagging. `pyproject.toml` sets `update_changelog_on_bump = false` and
 `version_provider = "uv"`, so the version stays in sync across
-`pyproject.toml`, `src/code_scanner/__init__.py`, and `uv.lock`.
+`pyproject.toml`, `src/airlock_scan/__init__.py`, and `uv.lock`.
 
 ## The mental model — "release" ≠ "promotion"
 
@@ -42,17 +42,17 @@ branch, then merge it into `main`.
 
 ## 1 · Do the ceremony on a release branch
 
-`cscan release` (i.e. `scripts/release.sh`) computes the next version, compiles the changelog, and
+`airlock release` (i.e. `scripts/release.sh`) computes the next version, compiles the changelog, and
 bumps + commits + tags **locally — it does not push.**
 
 ```bash
 git switch -c release/X.Y.Z origin/staging   # freeze the QA'd candidate
-cscan release                                # interactive: changelog → bump → commit → tag vX.Y.Z
-cscan release --yes                          # non-interactive equivalent
+airlock release                                # interactive: changelog → bump → commit → tag vX.Y.Z
+airlock release --yes                          # non-interactive equivalent
 git push -u origin release/X.Y.Z             # push the branch (tag waits until step 2)
 ```
 
-Manual equivalent of `cscan release`:
+Manual equivalent of `airlock release`:
 
 ```bash
 next="$(uv run cz bump --get-next)"              # next version from Conventional Commits
@@ -78,7 +78,7 @@ this release PR.
 ## 3 · Preview without changing anything
 
 ```bash
-cscan changelog preview      # the unreleased CHANGELOG section
+airlock changelog preview      # the unreleased CHANGELOG section
 uv run cz bump --dry-run     # the version that would be chosen
 ```
 

@@ -1,7 +1,7 @@
 """LLM backends for the Tier-2 quarantined reviewer.
 
 We speak the OpenAI-compatible Chat Completions API so one client reaches cloud
-and local providers alike (see :class:`code_scanner.config.LLMConfig`). The HTTP
+and local providers alike (see :class:`airlock_scan.config.LLMConfig`). The HTTP
 client uses only the standard library — no SDK dependency — and is invoked only
 when a real backend is configured. Tests use :class:`FakeBackend` and never touch
 the network.

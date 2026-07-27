@@ -14,9 +14,9 @@ source "${ROOT}/scripts/lib/tools.sh"
 assume_yes=0
 [ "${1:-}" = "--yes" ] && assume_yes=1
 
-ui_header "cscan • install / check scanners"
+ui_header "airlock • install / check scanners"
 
-for id in "${CSCAN_DEFAULT_SCANNERS[@]}" "${CSCAN_OPTIONAL_SCANNERS[@]}"; do
+for id in "${AIRLOCK_DEFAULT_SCANNERS[@]}" "${AIRLOCK_OPTIONAL_SCANNERS[@]}"; do
   adapter="$(scanner_adapter "$id")"
   [ -f "$adapter" ] || { log_warn "no adapter for ${id}"; continue; }
   name="$(bash "$adapter" name 2>/dev/null || echo "$id")"
@@ -36,4 +36,4 @@ for id in "${CSCAN_DEFAULT_SCANNERS[@]}" "${CSCAN_OPTIONAL_SCANNERS[@]}"; do
   fi
 done
 
-log_info "Tip: run 'cscan doctor' for an environment + OSV supply-chain audit."
+log_info "Tip: run 'airlock doctor' for an environment + OSV supply-chain audit."

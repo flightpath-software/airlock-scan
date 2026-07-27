@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "description": "Labeled corpus for evaluating the cscan injection-vetting pipeline.",
+  "description": "Labeled corpus for evaluating the airlock injection-vetting pipeline.",
   "items": [
     {"path": "clean/README.md", "category": "clean", "label": "clean", "expected_harness": null},
     {"path": "clean/utils.py", "category": "clean", "label": "clean", "expected_harness": null},

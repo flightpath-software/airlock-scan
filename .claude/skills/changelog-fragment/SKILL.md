@@ -1,9 +1,9 @@
 ---
 name: changelog-fragment
-description: Add a Towncrier changelog fragment when preparing a pull request in code-scanner. Use whenever a PR changes user-facing behavior (a new scanner, a feature, a fix, a CLI/config change, deprecation, removal, or security fix), or when deciding whether a PR needs one.
+description: Add a Towncrier changelog fragment when preparing a pull request in airlock-scan. Use whenever a PR changes user-facing behavior (a new scanner, a feature, a fix, a CLI/config change, deprecation, removal, or security fix), or when deciding whether a PR needs one.
 ---
 
-# Add a changelog fragment (code-scanner)
+# Add a changelog fragment (airlock-scan)
 
 `CHANGELOG.md` is compiled by [Towncrier](https://towncrier.readthedocs.io) from
 small per-change news fragments in [`changelog.d/`](../../../changelog.d/) —
@@ -25,8 +25,8 @@ only, an internal refactor with no behavior change, or test-only.
 Guided (recommended):
 
 ```bash
-cscan changelog            # pick a type, write a one-line summary
-cscan changelog preview    # preview the assembled unreleased section
+airlock changelog            # pick a type, write a one-line summary
+airlock changelog preview    # preview the assembled unreleased section
 ```
 
 Or directly with Towncrier:
@@ -64,5 +64,5 @@ Avoid internal IDs and roadmap talk in the text.
 
 ```bash
 uv run towncrier check --compare-with origin/develop   # what CI runs on a PR
-cscan changelog preview
+airlock changelog preview
 ```

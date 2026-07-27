@@ -81,7 +81,7 @@ class Attribution:
 @lru_cache(maxsize=1)
 def load_signatures() -> dict:
     """Load the vendored harness-signature dataset (packaged JSON)."""
-    text = resources.files("code_scanner").joinpath("data", _DATA_FILE).read_text(encoding="utf-8")
+    text = resources.files("airlock_scan").joinpath("data", _DATA_FILE).read_text(encoding="utf-8")
     return json.loads(text)
 
 

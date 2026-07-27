@@ -1,6 +1,6 @@
-# code-scanner docs
+# airlock-scan docs
 
-Project documentation. Start with the [README](../README.md) for what `cscan` is
+Project documentation. Start with the [README](../README.md) for what `airlock` is
 and how to run it; this folder covers contributor workflows.
 
 ## Guides
@@ -22,10 +22,10 @@ and how to run it; this folder covers contributor workflows.
 ## Quick reference
 
 ```bash
-cscan changelog          # add a news fragment (gum-guided)
-cscan changelog preview  # preview the unreleased changelog
+airlock changelog          # add a news fragment (gum-guided)
+airlock changelog preview  # preview the unreleased changelog
 uv run cz commit         # compose a Conventional Commit interactively
-cscan release            # build changelog + bump version + tag
+airlock release            # build changelog + bump version + tag
 ```
 
 ## Conventions at a glance

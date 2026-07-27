@@ -14,7 +14,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import IntEnum
 
-from code_scanner.findings import Finding, Severity
+from airlock_scan.findings import Finding, Severity
 
 # Tier-2 statuses that mean "a human must look" (see store / quarantine).
 _REVIEW_STATUSES = {"NEEDS_REVIEW", "HUMAN_REVIEW", "MALFORMED"}

@@ -1,10 +1,10 @@
-# cscan custom Semgrep taint rules (JavaScript / TypeScript).
+# airlock custom Semgrep taint rules (JavaScript / TypeScript).
 #
 # Strategy A, Tier 1: deterministic source -> sink dataflow, no execution of the
 # target. Mirrors the Python pack for the npm ecosystem (the other primary
 # supply-chain / skill surface). SARIF "error" level -> HIGH.
 rules:
-  - id: cscan-js-untrusted-input-to-exec
+  - id: airlock-js-untrusted-input-to-exec
     mode: taint
     languages: [javascript, typescript]
     severity: ERROR
@@ -14,7 +14,7 @@ rules:
     metadata:
       category: security
       cwe: "CWE-78: OS Command Injection"
-      cscan: taint
+      airlock: taint
     pattern-sources:
       - pattern-either:
           - pattern: process.env
@@ -33,7 +33,7 @@ rules:
               - pattern: exec(...)
               - pattern: execSync(...)
 
-  - id: cscan-js-untrusted-input-to-eval
+  - id: airlock-js-untrusted-input-to-eval
     mode: taint
     languages: [javascript, typescript]
     severity: ERROR
@@ -43,7 +43,7 @@ rules:
     metadata:
       category: security
       cwe: "CWE-94: Code Injection"
-      cscan: taint
+      airlock: taint
     pattern-sources:
       - pattern-either:
           - pattern: process.env
@@ -58,7 +58,7 @@ rules:
               - pattern: Function(...)
               - pattern: new Function(...)
 
-  - id: cscan-js-secret-or-file-exfiltration
+  - id: airlock-js-secret-or-file-exfiltration
     mode: taint
     languages: [javascript, typescript]
     severity: ERROR
@@ -68,7 +68,7 @@ rules:
     metadata:
       category: security
       cwe: "CWE-200: Exposure of Sensitive Information"
-      cscan: taint
+      airlock: taint
     pattern-sources:
       - pattern-either:
           - pattern: process.env

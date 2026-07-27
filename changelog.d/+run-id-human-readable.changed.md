@@ -1,1 +1,1 @@
-Make `~/cscan` run directory ids more human-readable: `YYYYMMDD-<rand6>` (e.g. `20260602-092b9b`) instead of the full timestamp `YYYYMMDDTHHMMSSZ-<rand6>`. Exact intra-day ordering is still available via `started_at` in each run's `manifest.json`.
+Make `~/airlock` run directory ids more human-readable: `YYYYMMDD-<rand6>` (e.g. `20260602-092b9b`) instead of the full timestamp `YYYYMMDDTHHMMSSZ-<rand6>`. Exact intra-day ordering is still available via `started_at` in each run's `manifest.json`.

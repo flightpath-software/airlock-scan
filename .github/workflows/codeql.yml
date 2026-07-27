@@ -1,7 +1,7 @@
 name: codeql
 
 # Static analysis via GitHub CodeQL. Scoped to Python — the only CodeQL-supported language shipped
-# here (the rest of cscan is POSIX shell, which CodeQL does not analyze; shell is syntax-checked in
+# here (the rest of airlock is POSIX shell, which CodeQL does not analyze; shell is syntax-checked in
 # ci.yml). Results appear under the repo's Security → Code scanning tab.
 
 on:

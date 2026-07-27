@@ -20,7 +20,7 @@
 #
 # Use a scope for the area, e.g.  feat(scanners): ...   fix(security): ...
 # (The changelog section — Security, Scanners, etc. — is chosen separately by
-#  the news-fragment type via `cscan changelog`, not by the commit type.)
+#  the news-fragment type via `airlock changelog`, not by the commit type.)
 #
 # Breaking change: add "!" after type/scope  (e.g. feat!: ...)  OR a
 # "BREAKING CHANGE:" footer.  (pre-1.0 this bumps MINOR, not MAJOR.)
@@ -31,5 +31,5 @@
 #   fix(security): refuse install of OSV-flagged versions
 #   docs(commits): document Tower workflow
 #
-# Remember: also add a changelog fragment  ->  cscan changelog
+# Remember: also add a changelog fragment  ->  airlock changelog
 # ---------------------------------------------------------------------------

@@ -6,7 +6,7 @@ the scripted FakeBackend.
 
 from __future__ import annotations
 
-from code_scanner.llm_backend import (
+from airlock_scan.llm_backend import (
     BackendResponse,
     FakeBackend,
     ToolCall,

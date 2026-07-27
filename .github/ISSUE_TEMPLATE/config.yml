@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
   - name: Report a security vulnerability
-    url: https://github.com/flightpath-software/code-scanner/security/advisories/new
+    url: https://github.com/flightpath-software/airlock-scan/security/advisories/new
     about: Do NOT open a public issue for a vulnerability — report it privately here (see SECURITY.md).
   - name: Question / discussion
-    url: https://github.com/flightpath-software/code-scanner/issues
+    url: https://github.com/flightpath-software/airlock-scan/issues
     about: For open-ended questions, search existing issues first; open a bug or feature request if it fits.

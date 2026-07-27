@@ -1,11 +1,11 @@
-# cscan custom Semgrep taint rules (Python).
+# airlock custom Semgrep taint rules (Python).
 #
 # Strategy A, Tier 1: deterministic source -> sink dataflow. None of this runs
 # the target. Sources are untrusted inputs (env, argv, stdin, file/network
 # reads); sinks are dangerous operations (shell exec, code eval, outbound
 # exfiltration). Findings are normalized via the SARIF "error" level -> HIGH.
 rules:
-  - id: cscan-untrusted-input-to-shell
+  - id: airlock-untrusted-input-to-shell
     mode: taint
     languages: [python]
     severity: ERROR
@@ -15,7 +15,7 @@ rules:
     metadata:
       category: security
       cwe: "CWE-78: OS Command Injection"
-      cscan: taint
+      airlock: taint
     pattern-sources:
       - pattern-either:
           - pattern: os.environ.get(...)
@@ -35,7 +35,7 @@ rules:
               - pattern: subprocess.check_output(...)
               - pattern: subprocess.Popen(...)
 
-  - id: cscan-untrusted-input-to-eval
+  - id: airlock-untrusted-input-to-eval
     mode: taint
     languages: [python]
     severity: ERROR
@@ -45,7 +45,7 @@ rules:
     metadata:
       category: security
       cwe: "CWE-94: Code Injection"
-      cscan: taint
+      airlock: taint
     pattern-sources:
       - pattern-either:
           - pattern: os.environ.get(...)
@@ -63,7 +63,7 @@ rules:
               - pattern: compile(...)
               - pattern: __import__(...)
 
-  - id: cscan-secret-or-file-exfiltration
+  - id: airlock-secret-or-file-exfiltration
     mode: taint
     languages: [python]
     severity: ERROR
@@ -73,7 +73,7 @@ rules:
     metadata:
       category: security
       cwe: "CWE-200: Exposure of Sensitive Information"
-      cscan: taint
+      airlock: taint
     pattern-sources:
       - pattern-either:
           - pattern: os.environ

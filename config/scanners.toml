@@ -1,4 +1,4 @@
-# Declarative manifest of the scanners cscan orchestrates.
+# Declarative manifest of the scanners airlock orchestrates.
 #
 # This file is human-facing documentation of the registry. The functional source
 # of truth is each adapter script in `scanners/<id>.sh` (which implements
@@ -43,7 +43,7 @@ detects = "invisible-unicode / trojan-source / Glassworm / tag-char prompt-injec
 install = "uvx"
 runtime = "python"
 output = "sarif"
-# Set CSCAN_HECKLER_SCAN_DEPS=1 to also scan vendored dependency directories.
+# Set AIRLOCK_HECKLER_SCAN_DEPS=1 to also scan vendored dependency directories.
 
 [scanners.anti-trojan-source]
 detects = "trojan-source / confusable unicode (second opinion)"

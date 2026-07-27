@@ -20,16 +20,16 @@ import re
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
-from code_scanner.canary import CanaryTool, attribute
-from code_scanner.llm_backend import BackendResponse, LLMBackend
-from code_scanner.store import RunStore, sha256_bytes
+from airlock_scan.canary import CanaryTool, attribute
+from airlock_scan.llm_backend import BackendResponse, LLMBackend
+from airlock_scan.store import RunStore, sha256_bytes
 
 # --- statuses --------------------------------------------------------------
 STATUS_OK = "OK"  # a clean/declared verdict was produced
 STATUS_HUMAN_REVIEW = "HUMAN_REVIEW"  # a canary fired
 STATUS_NEEDS_REVIEW = "NEEDS_REVIEW"  # no usable verdict (text-only/malformed)
 
-REDACTION_MARK = "[CSCAN-REDACTED]"
+REDACTION_MARK = "[AIRLOCK-REDACTED]"
 
 # Bisection stops once the suspect span is this few lines (don't over-split).
 MIN_BISECT_LINES = 3
@@ -342,8 +342,8 @@ def is_probably_binary(data: bytes) -> bool:
 
 
 # Directories never worth feeding to the reviewer (VCS metadata, vendored deps,
-# and cscan's own output). Kept small and obvious.
-_SKIP_DIRS = {".git", ".hg", ".svn", "node_modules", ".venv", "venv", "__pycache__", ".cscan"}
+# and airlock's own output). Kept small and obvious.
+_SKIP_DIRS = {".git", ".hg", ".svn", "node_modules", ".venv", "venv", "__pycache__", ".airlock"}
 
 
 def iter_review_files(root, *, max_file_bytes: int = 200_000):

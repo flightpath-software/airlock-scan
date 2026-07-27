@@ -34,7 +34,7 @@ jobs:
       - name: Shell syntax check
         run: |
           shopt -s nullglob
-          for f in bin/cscan scripts/*.sh scripts/lib/*.sh scanners/*.sh; do
+          for f in bin/airlock scripts/*.sh scripts/lib/*.sh scanners/*.sh; do
             [ -f "$f" ] || continue
             bash -n "$f"
           done
