@@ -62,11 +62,25 @@ scripts/scan.sh /path/to/target
 Each scan writes raw tool output into `<target>/.airlock/` (git-ignored), then the helper merges
 it and prints a summary, exiting non-zero if findings exceed the configured severity gate.
 
+## Configuration
+
+Airlock supports OpenAI compatible chat completion requests using reasonable OpenAI defaults; 
+You can override these defaults and point the Tier-2 reviewer at a different LLM provider 
+(OpenAI, Groq, xAI, a local model that supports the OpenAI chat completion protocol).
+
+You never edit the source: override via `~/airlock/config.toml`, a project's `[tool.airlock]` 
+table, or `AIRLOCK_*` environment variables. See **[docs/configuration.md](docs/configuration.md)** 
+for the full reference and copy-paste recipes (including "switch LLM provider" and "run fully offline").
+
+> Your API key lives in an **environment variable** (e.g. `export OPENAI_API_KEY=…`), never in
+> the repo or config; the config only stores that variable's *name*. Or skip keys entirely with
+> `--fake` / `provider = "local"`.
+
 ## Supply-chain cooldown (the 3-day rule)
 
 To avoid pulling freshly published — and not-yet-detected — malicious releases, `uv` is
 configured in [`pyproject.toml`](pyproject.toml) to **never resolve a distribution younger than
-3 days**:
+3 days** without an explicit override:
 
 ```toml
 [tool.uv]
