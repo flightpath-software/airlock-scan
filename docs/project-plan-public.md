@@ -453,15 +453,12 @@ everywhere.
   PRs come from the committed `dependabot.yml`).
 - **Secret scanning** + **Push protection**: enable (defense-in-depth alongside
   the gitleaks workflow).
-- **Code scanning (CodeQL)**: the committed `codeql.yml` populates the
-  Code-scanning tab; confirm default setup isn't also enabled (avoid duplicate
-  analyses). **Interim while private:** uploading CodeQL results needs Advanced
-  Security ("Code Security"), which is off on the private repo, so the analyze
-  step in `codeql.yml` ships with `upload: false` — CodeQL still builds the DB and
-  runs the queries, it just skips the results upload that would otherwise error.
-  **Remove that line at go-public** (code scanning is free on public repos; the
-  default is to upload) so CodeQL populates the Security tab and becomes a hard,
-  required check.
+- **Code scanning (CodeQL)**: the committed `codeql.yml` uploads to the
+  Code-scanning tab (free on public repos); confirm default setup isn't also
+  enabled (avoid duplicate analyses). The private-repo `upload: false` interim was
+  removed at go-public, so CodeQL now uploads results and is a real gate. If the
+  analyze step ever 403s with "Code Security must be enabled", turn code scanning
+  on in Settings → Advanced Security.
 
 ### 5.5 Actions permissions (Settings → Actions → General)
 - **Workflow permissions → Read repository contents** (least privilege); the two
