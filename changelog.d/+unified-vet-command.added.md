@@ -1,1 +1,0 @@
-Add the unified `airlock-helper vet <target> --tier1-results <dir>` command (and `scripts/vet.sh`) that runs the deterministic Tier-1 scanners **and** the Tier-2 quarantined reviewer and merges both into a single `~/airlock/<run-id>/` run with one gated `report.md` — canary fires first, then Tier-1 findings, then Tier-2 advisory flags. Completes the M4 integration milestone.

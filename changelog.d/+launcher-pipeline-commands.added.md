@@ -1,1 +1,0 @@
-Wire the pipeline commands into the `airlock` launcher: `airlock vet`, `airlock quarantine`, and `airlock eval` now work from the single launcher (and the interactive gum menu), so you no longer need to call `scripts/*.sh` or `airlock-helper` directly.

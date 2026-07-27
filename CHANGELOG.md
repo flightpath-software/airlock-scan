@@ -11,6 +11,37 @@ Changes for the upcoming release are kept as individual news fragments in
 
 <!-- towncrier release notes start -->
 
+## [0.5.0] - 2026-07-27
+
+### Security
+
+- Add CI security scanning for the project's own supply chain: CodeQL (Python SAST), Bandit, `pip-audit` (OSV dependency audit), and a hardened, checksum-pinned gitleaks secret scan — running on pull requests, on pushes to `main`/`develop`/`staging`, and weekly. CI also now enforces `uv lock --locked` so the lockfile can't drift from the 3-day dependency cooldown.
+- Guard the synthetic prompt-injection fixtures in `corpus/`: add a prominent agent-facing warning to `CLAUDE.md`, a new `AGENTS.md`, and `corpus/README.md` instructing any AI agent working in the repo to treat `corpus/adversarial/` and `corpus/targeted/` as inert, untrusted data — never instructions. Exfil targets use reserved `*.example` domains.
+
+### Added
+
+- Add the M5 evaluation harness: a labeled corpus under `corpus/` (clean / trigger-word-heavy clean / adversarial / harness-targeted) and `airlock-helper eval`, which runs the Tier-2 reviewer over the corpus and reports **detection rate**, the headline **canary false-positive rate** on clean/trigger files, and **harness attribution accuracy** (Markdown or `--json`). The backend is pluggable: a real model, an offline `--fake` baseline, or an offline `--heuristic` backend that fires on any tool-name mention to illustrate the over-defense failure mode.
+- Add the unified `airlock-helper vet <target> --tier1-results <dir>` command (and `scripts/vet.sh`) that runs the deterministic Tier-1 scanners **and** the Tier-2 quarantined reviewer and merges both into a single `~/airlock/<run-id>/` run with one gated `report.md` — canary fires first, then Tier-1 findings, then Tier-2 advisory flags. Completes the M4 integration milestone.
+- Publish `airlock-scan` under the **Apache-2.0** license (`LICENSE`, `pyproject.toml` `license = "Apache-2.0"`). The built wheel/sdist now carry the license and exclude agent-instruction files.
+- Wire the pipeline commands into the `airlock` launcher: `airlock vet`, `airlock quarantine`, and `airlock eval` now work from the single launcher (and the interactive gum menu), so you no longer need to call `scripts/*.sh` or `airlock-helper` directly.
+
+### Changed
+
+- Make `~/airlock` run directory ids more human-readable: `YYYYMMDD-<rand6>` (e.g. `20260602-092b9b`) instead of the full timestamp `YYYYMMDDTHHMMSSZ-<rand6>`. Exact intra-day ordering is still available via `started_at` in each run's `manifest.json`.
+- Rename the toolkit to **Airlock**. The command is now `airlock` (was `cscan`) with helper `airlock-helper`; the Python package is `airlock_scan` (distribution `airlock-scan`); the config table is `[tool.airlock]`; environment variables use the `AIRLOCK_*` prefix; and the user-local run store moved to `~/airlock/`. This is a breaking rename with no compatibility shim — done deliberately pre-1.0, before the first public release.
+- `airlock changelog` now prompts for an optional Linear ticket ID and title, prepending a `[FP-XXX: Title](url)` link to the fragment content. GUI users (Tower, PyCharm) can write the same format by hand in `changelog.d/+slug.type.md`. Fragment filenames are always orphan slugs — the Linear link lives in the content, not the filename.
+
+### Documentation
+
+- Add `docs/project-plan-public.md` — a plan for taking `airlock-scan` public: governance/legal files, `.github` scaffolding, security workflows, Claude skills, a three-branch model (`develop` → `staging` → `main`) with future support for isolated test execution, the GitHub settings a maintainer must apply, and the procedure to flatten `main` into a single initial public-release commit.
+- Add four Claude Code skills adapted from [mattpocock/skills](https://github.com/mattpocock/skills) (MIT, attributed in `.claude/skills/NOTICE.md`): `code-review` (two-axis Standards + Spec review), `domain-modeling`, `grilling`, and `grill-with-docs`. Also add `docs/CODING_STANDARDS.md` — the canonical coding conventions the `code-review` Standards axis checks against.
+- Add public-repository governance and contributor docs: `SECURITY.md` (private vulnerability reporting + security posture), `CONTRIBUTING.md` (with the `develop` → `staging` → `main` branch model), `CODE_OF_CONDUCT.md`, `VALIDATION.md` (promises mapped to the tests that prove them), the first two ADRs, GitHub issue/PR templates + `CODEOWNERS` + Dependabot, and `.claude/skills/` for the changelog and release workflows.
+
+### Misc
+
+- Enable CodeQL result upload now that the repo is public (removed the interim `upload: false`), so code-scanning results populate the Security tab and gate PRs.
+
+
 ## [0.4.0] - 2026-06-01
 
 ### Added
