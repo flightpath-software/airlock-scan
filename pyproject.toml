@@ -27,7 +27,7 @@ dependencies = [
 airlock-helper = "airlock_scan.cli:main"
 
 [build-system]
-requires = ["uv_build>=0.11.8,<0.12"]
+requires = ["uv_build>=0.11.33,<0.12"]
 build-backend = "uv_build"
 
 [tool.uv]
