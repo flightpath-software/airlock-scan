@@ -10,8 +10,13 @@ updates:
     # Auto-label so Dependabot PRs satisfy the changelog gate (a maintainer can still add a
     # `security`/`changed` fragment for a notable bump).
     labels: ["dependencies", "skip-changelog"]
+    # `build(deps):` — the prefix must be a Conventional Commits type accepted by the
+    # `cz check` guard (build|bump|chore|ci|docs|feat|fix|perf|refactor|revert|style|test).
+    # `deps` is NOT such a type, so it failed the commit guard on every uv PR; `include: scope`
+    # appends the update scope (deps / deps-dev) as the commit scope.
     commit-message:
-      prefix: "deps"
+      prefix: "build"
+      include: "scope"
 
   # Keep the GitHub Actions we pin (checkout, setup-uv, codeql-action, …) current.
   - package-ecosystem: "github-actions"
@@ -23,3 +28,4 @@ updates:
     labels: ["dependencies", "skip-changelog"]
     commit-message:
       prefix: "ci"
+      include: "scope"

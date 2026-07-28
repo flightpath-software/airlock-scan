@@ -1,0 +1,1 @@
+Pin an explicit Ruff lint rule set so linting stays deterministic across Ruff upgrades (a minor bump no longer silently changes which rules CI enforces), and align Dependabot's commit prefixes with the Conventional Commits guard so dependency-update PRs pass CI.
