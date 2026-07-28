@@ -51,6 +51,11 @@ target-version = "py312"
 line-length = 100
 src = ["src", "tests"]
 
+[tool.ruff.lint]
+# Pin an explicit rule selection so the enforced set is deterministic across Ruff
+# upgrades.
+select = ["E4", "E7", "E9", "F"]
+
 # --- Changelog (human-written fragments -> Keep a Changelog markdown) -------
 [tool.towncrier]
 directory = "changelog.d"
