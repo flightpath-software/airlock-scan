@@ -131,6 +131,6 @@ bump_message = "bump: $current_version \u2192 $new_version"
 dev = [
     "commitizen>=4.16.2",
     "pytest>=9.0.3",
-    "ruff>=0.16.0",
+    "ruff>=0.16.2",
     "towncrier>=25.8.0",
 ]
