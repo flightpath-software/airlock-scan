@@ -33,7 +33,11 @@ which beats the built-in default.
 > cwd discovery finds *airlock's own* `pyproject.toml` — not your project's. To load
 > **your own** project defaults deliberately, pass `--config path/to/your.toml` (on
 > `vet` / `quarantine`) or set `AIRLOCK_CONFIG` (works everywhere, ideal for CI);
-> both take precedence over cwd discovery. Persistent machine-wide defaults still
+> both take precedence over cwd discovery, and `--config` accepts either a bare
+> airlock table or a `[tool.airlock]` pyproject. Under `bin/airlock` /
+> `scripts/vet.sh`, give an **absolute** path — a relative one resolves against the
+> airlock checkout, since the launcher changes directory first.
+> Persistent machine-wide defaults still
 > live in `~/airlock/config.toml`, which is always loaded regardless of cwd.
 > Resolves [#45](https://github.com/flightpath-software/airlock-scan/issues/45).
 >

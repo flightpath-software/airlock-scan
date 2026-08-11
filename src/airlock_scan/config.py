@@ -239,20 +239,28 @@ def _apply_env(cfg: Config, environ: dict[str, str]) -> Config:
 
 
 def _within_target(path: Path, target: Path | None) -> bool:
-    """True if ``path`` resolves inside ``target`` (so it must not be trusted)."""
+    """True if ``path`` is located inside ``target`` (so it must not be trusted).
+
+    Checks the path both symlink-resolved (catches a symlink *outside* the target
+    pointing in) and as a lexical absolute path (catches a symlink *inside* the
+    target pointing out, and normalizes ``..``). Fails **closed**: if a path can't
+    be resolved, treat it as inside the target and refuse it.
+    """
     if target is None:
         return False
     try:
-        return path.resolve().is_relative_to(target.resolve())
-    except (OSError, ValueError):
-        return False
+        troot = os.path.realpath(target).rstrip(os.sep)
+        candidates = [os.path.normpath(os.path.abspath(path)), os.path.realpath(path)]
+    except OSError:
+        return True
+    return any(c == troot or c.startswith(troot + os.sep) for c in candidates)
 
 
 def _warn_target_config(path: Path) -> None:
     print(
-        f"airlock: refusing to read config from inside the scanned target ({path}); "
-        "an untrusted repo must not reconfigure the scanner. Use --config or "
-        "AIRLOCK_CONFIG to point at a trusted file.",
+        f"airlock-helper: refusing to read config from inside the scanned target "
+        f"({path}); an untrusted repo must not reconfigure the scanner. Use --config "
+        "or AIRLOCK_CONFIG to point at a trusted file.",
         file=sys.stderr,
     )
 
@@ -277,12 +285,14 @@ def load_config(
     # 2. project config: explicit --config / AIRLOCK_CONFIG wins over cwd discovery;
     #    a pyproject found by walking up from cwd is the fallback. Whatever is
     #    chosen is refused if it lives inside the scanned target (#45).
-    explicit = config_path or (
-        Path(environ["AIRLOCK_CONFIG"]).expanduser() if environ.get("AIRLOCK_CONFIG") else None
-    )
+    explicit: Path | None = None
+    if config_path is not None:
+        explicit = config_path.expanduser()
+    elif environ.get("AIRLOCK_CONFIG"):
+        explicit = Path(environ["AIRLOCK_CONFIG"]).expanduser()
     if explicit is not None:
         if not explicit.is_file():
-            print(f"airlock: warning: config file not found: {explicit}", file=sys.stderr)
+            print(f"airlock-helper: warning: config file not found: {explicit}", file=sys.stderr)
         elif _within_target(explicit, target):
             _warn_target_config(explicit)
         else:

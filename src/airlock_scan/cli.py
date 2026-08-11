@@ -219,8 +219,11 @@ def _cmd_ingest(args: argparse.Namespace) -> int:
     report = build_report(findings, gate=gate, warnings=warnings)
     decision = decide(findings, gate=gate)
 
-    cfg = load_config()
-    target = str((args.target or args.results_dir))
+    # Guard against reading a [tool.airlock] from inside the scanned tree (#45):
+    # ingest knows the target, so pass it so cwd discovery is refused there too.
+    guard_target = (args.target or args.results_dir).expanduser().resolve()
+    cfg = load_config(target=guard_target)
+    target = str(guard_target)
     store = RunStore.create(
         cfg.store_root,
         target=target,
@@ -486,8 +489,8 @@ def _cmd_eval(args: argparse.Namespace) -> int:
     from airlock_scan.llm_backend import FakeBackend
     from airlock_scan.quarantine import QuarantineReviewer
 
-    cfg = load_config()
     root = args.corpus.expanduser().resolve()
+    cfg = load_config(target=root)
     if not (root / "labels.json").is_file():
         print(f"airlock-helper: error: no labels.json in {root}", file=sys.stderr)
         return 2
