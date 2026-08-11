@@ -22,9 +22,10 @@ def test_no_api_key_error_never_echoes_configured_value(capsys, monkeypatch):
     assert "no api key" in err.lower()
 
 
-def test_no_api_key_message_names_only_the_safe_default(capsys, monkeypatch):
-    # When api_key_env is the built-in default (a public constant, not a secret),
-    # it's safe — and more helpful — to name it in the diagnostic (#41 UX).
+def test_no_api_key_message_states_the_default_env_name(capsys, monkeypatch):
+    # The message states the built-in default var name (a public constant) as a
+    # plain literal — helpful, and safe because it never interpolates the
+    # configured value (#41). A literal is also not a CodeQL taint source.
     from airlock_scan.cli import _resolve_backend
     from airlock_scan.config import DEFAULT_API_KEY_ENV, Config, LLMConfig
 

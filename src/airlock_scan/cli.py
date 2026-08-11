@@ -282,25 +282,21 @@ def _resolve_backend(cfg, fake: bool):
     """Build the Tier-2 backend, or print an error and return None."""
     import os
 
-    from airlock_scan.config import DEFAULT_API_KEY_ENV
     from airlock_scan.llm_backend import FakeBackend, from_config
 
     if fake:
         return FakeBackend()
     api_key = os.environ.get(cfg.llm.api_key_env)
     if not api_key and cfg.llm.provider != "local":
-        # Never echo the *configured* api_key_env value: a mis-pasted secret can be
-        # identifier-shaped and would leak to stderr / CI logs (#41). Name the var
-        # only when it's the built-in default (a public constant, never a secret);
-        # otherwise stay generic — the value may also come from user config or an
-        # AIRLOCK_* override, so don't claim a single source.
-        if cfg.llm.api_key_env == DEFAULT_API_KEY_ENV:
-            where = f"${DEFAULT_API_KEY_ENV}"
-        else:
-            where = "the environment variable named by your api_key_env setting"
+        # Never interpolate the configured api_key_env value: a mis-pasted secret
+        # can be identifier-shaped and would leak to stderr / CI logs (#41). Keep
+        # the message a constant and state the *default* variable name as a plain
+        # literal (public, never a secret) — no key-named variable flows into the
+        # log, which also keeps CodeQL's clear-text-logging check clean.
         print(
-            f"airlock-helper: error: no API key found in {where}. "
-            "Set it, choose provider=local, or use --fake.",
+            "airlock-helper: error: no API key found in the configured environment "
+            "variable (default: OPENAI_API_KEY). Set it, choose provider=local, or "
+            "use --fake.",
             file=sys.stderr,
         )
         return None
