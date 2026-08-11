@@ -282,19 +282,25 @@ def _resolve_backend(cfg, fake: bool):
     """Build the Tier-2 backend, or print an error and return None."""
     import os
 
+    from airlock_scan.config import DEFAULT_API_KEY_ENV
     from airlock_scan.llm_backend import FakeBackend, from_config
 
     if fake:
         return FakeBackend()
     api_key = os.environ.get(cfg.llm.api_key_env)
     if not api_key and cfg.llm.provider != "local":
-        # Never echo the configured api_key_env value: it is user-supplied and a
-        # mis-pasted secret is identifier-shaped often enough that printing it
-        # would leak to stderr/CI logs (see #41). Keep the message value-free.
+        # Never echo the *configured* api_key_env value: a mis-pasted secret can be
+        # identifier-shaped and would leak to stderr / CI logs (#41). Name the var
+        # only when it's the built-in default (a public constant, never a secret);
+        # otherwise stay generic — the value may also come from user config or an
+        # AIRLOCK_* override, so don't claim a single source.
+        if cfg.llm.api_key_env == DEFAULT_API_KEY_ENV:
+            where = f"${DEFAULT_API_KEY_ENV}"
+        else:
+            where = "the environment variable named by your api_key_env setting"
         print(
-            "airlock-helper: error: no API key found in the environment variable "
-            "named by [tool.airlock.llm] api_key_env. Set that variable, choose "
-            "provider=local, or use --fake.",
+            f"airlock-helper: error: no API key found in {where}. "
+            "Set it, choose provider=local, or use --fake.",
             file=sys.stderr,
         )
         return None
@@ -322,6 +328,22 @@ def _print_canary_lines(canary_events: list[dict]) -> None:
         if span:
             line += f" — lines {span['start_line']}-{span['end_line']}"
         print(line)
+
+
+def _print_truncation_note(verdicts: list[dict]) -> None:
+    """Surface partially-reviewed (truncated) files in the console run output (#44).
+
+    A file larger than ``max_file_bytes`` is reviewed only up to the cap, so an
+    injection past it goes unseen. Both ``vet`` and ``quarantine`` call this so the
+    gap is visible in the run output, not only inside ``report.json``.
+    """
+    cut = [v for v in verdicts if v.get("truncated")]
+    if cut:
+        names = ", ".join(str(v.get("file_path")) for v in cut)
+        print(
+            f"  ⚠ {len(cut)} file(s) only partially reviewed — exceeded "
+            f"max_file_bytes, content past the cap was not seen: {names}"
+        )
 
 
 def _cmd_quarantine(args: argparse.Namespace) -> int:
@@ -377,6 +399,7 @@ def _cmd_quarantine(args: argparse.Namespace) -> int:
     for reason in decision.reasons:
         print(f"  - {reason}")
     _print_canary_lines(canary_events)
+    _print_truncation_note(verdicts)
     return 0 if decision.installable else 1
 
 
@@ -457,6 +480,7 @@ def _cmd_vet(args: argparse.Namespace) -> int:
     for reason in decision.reasons:
         print(f"  - {reason}")
     _print_canary_lines(canary_events)
+    _print_truncation_note(verdicts)
     print(f"run:    {store.run_dir}")
     print(f"report: {store.report_md_path}")
     return 0 if decision.installable else 1

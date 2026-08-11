@@ -20,3 +20,35 @@ def test_no_api_key_error_never_echoes_configured_value(capsys, monkeypatch):
     err = capsys.readouterr().err
     assert secret not in err
     assert "no api key" in err.lower()
+
+
+def test_no_api_key_message_names_only_the_safe_default(capsys, monkeypatch):
+    # When api_key_env is the built-in default (a public constant, not a secret),
+    # it's safe — and more helpful — to name it in the diagnostic (#41 UX).
+    from airlock_scan.cli import _resolve_backend
+    from airlock_scan.config import DEFAULT_API_KEY_ENV, Config, LLMConfig
+
+    monkeypatch.delenv(DEFAULT_API_KEY_ENV, raising=False)
+    cfg = Config(llm=LLMConfig(provider="openai"))  # default api_key_env
+    assert _resolve_backend(cfg, fake=False) is None
+    assert DEFAULT_API_KEY_ENV in capsys.readouterr().err
+
+
+def test_truncation_note_lists_only_partially_reviewed_files(capsys):
+    from airlock_scan.cli import _print_truncation_note
+
+    _print_truncation_note(
+        [{"file_path": "big.py", "truncated": True},
+         {"file_path": "ok.py", "truncated": False}]
+    )
+    out = capsys.readouterr().out
+    assert "partially reviewed" in out
+    assert "big.py" in out
+    assert "ok.py" not in out
+
+
+def test_truncation_note_silent_when_nothing_truncated(capsys):
+    from airlock_scan.cli import _print_truncation_note
+
+    _print_truncation_note([{"file_path": "ok.py", "truncated": False}])
+    assert capsys.readouterr().out == ""
