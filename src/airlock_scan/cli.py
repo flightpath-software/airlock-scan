@@ -288,9 +288,13 @@ def _resolve_backend(cfg, fake: bool):
         return FakeBackend()
     api_key = os.environ.get(cfg.llm.api_key_env)
     if not api_key and cfg.llm.provider != "local":
+        # Never echo the configured api_key_env value: it is user-supplied and a
+        # mis-pasted secret is identifier-shaped often enough that printing it
+        # would leak to stderr/CI logs (see #41). Keep the message value-free.
         print(
-            f"airlock-helper: error: no API key in ${cfg.llm.api_key_env}. "
-            f"Set it, choose provider=local, or use --fake.",
+            "airlock-helper: error: no API key found in the environment variable "
+            "named by [tool.airlock.llm] api_key_env. Set that variable, choose "
+            "provider=local, or use --fake.",
             file=sys.stderr,
         )
         return None

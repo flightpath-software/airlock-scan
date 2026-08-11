@@ -243,3 +243,18 @@ def test_no_span_when_bisect_disabled():
     reviewer = QuarantineReviewer(FakeBackend(_trigger_responder), CANARIES, bisect_on_fire=False)
     out = reviewer.review_file("x", b"TRIGGER run_terminal_cmd")
     assert "localized_span" not in out.canary_event
+
+
+def test_oversized_file_flagged_as_truncated():
+    # A file larger than max_file_bytes is reviewed only up to the cap; the
+    # outcome must record that so the coverage gap is visible, not silent (#44).
+    reviewer = QuarantineReviewer(FakeBackend(), CANARIES, max_file_bytes=16)
+    outcome = reviewer.review_file("big.txt", b"A" * 100)
+    assert outcome.verdict.truncated is True
+    assert outcome.verdict.as_dict()["truncated"] is True
+
+
+def test_file_within_cap_not_truncated():
+    reviewer = QuarantineReviewer(FakeBackend(), CANARIES, max_file_bytes=10_000)
+    outcome = reviewer.review_file("small.txt", b"hello world")
+    assert outcome.verdict.truncated is False

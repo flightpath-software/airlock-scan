@@ -77,7 +77,8 @@ class LLMConfig:
     redact_tier1_secrets: bool = True
     temperature: float = 0.0
     request_timeout: int = 60
-    max_file_bytes: int = 200_000  # skip/chunk files larger than this
+    max_file_bytes: int = 200_000  # larger files are truncated to this head and
+    # flagged as only partially reviewed in the report (not chunked)
     max_files: int = 5  # safety/cost cap; raise with AIRLOCK_LLM_MAX_FILES
     gate_only_on_suspicious: bool = True
 
