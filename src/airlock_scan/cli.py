@@ -126,6 +126,13 @@ def _build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Disable canary-fire bisection (cheaper; skips the extra probe calls).",
     )
+    quarantine.add_argument(
+        "--config",
+        type=Path,
+        default=None,
+        help="Path to a trusted airlock config file (overrides AIRLOCK_CONFIG and "
+        "cwd discovery; never read from inside the target).",
+    )
 
     # vet — the unified run: merge Tier-1 scanner output + Tier-2 quarantine.
     vet = sub.add_parser(
@@ -155,6 +162,13 @@ def _build_parser() -> argparse.ArgumentParser:
         "--no-localize",
         action="store_true",
         help="Disable canary-fire bisection (cheaper; skips the extra probe calls).",
+    )
+    vet.add_argument(
+        "--config",
+        type=Path,
+        default=None,
+        help="Path to a trusted airlock config file (overrides AIRLOCK_CONFIG and "
+        "cwd discovery; never read from inside the target).",
     )
 
     # eval — score the pipeline against a labeled corpus.
@@ -328,11 +342,11 @@ def _cmd_quarantine(args: argparse.Namespace) -> int:
     from airlock_scan.quarantine import QuarantineReviewer, review_tree
     from airlock_scan.store import RunStore
 
-    cfg = load_config()
     target = args.target.expanduser().resolve()
     if not target.is_dir():
         print(f"airlock-helper: error: not a directory: {target}", file=sys.stderr)
         return 2
+    cfg = load_config(config_path=args.config, target=target)
 
     backend = _resolve_backend(cfg, args.fake)
     if backend is None:
@@ -388,11 +402,11 @@ def _cmd_vet(args: argparse.Namespace) -> int:
     from airlock_scan.report import build_report, render_markdown
     from airlock_scan.store import RunStore
 
-    cfg = load_config()
     target = args.target.expanduser().resolve()
     if not target.is_dir():
         print(f"airlock-helper: error: not a directory: {target}", file=sys.stderr)
         return 2
+    cfg = load_config(config_path=args.config, target=target)
 
     # Tier-1: optional deterministic findings produced by the shell scanners.
     findings, warnings = ([], [])

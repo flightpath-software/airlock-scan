@@ -3,19 +3,24 @@
 Resolution precedence (later wins):
 
 1. Built-in defaults (see :class:`Config`).
-2. ``[tool.airlock]`` in a project ``pyproject.toml`` (repo-level defaults).
+2. Project config: an explicit ``--config`` / ``AIRLOCK_CONFIG`` file if given,
+   otherwise a ``[tool.airlock]`` table in a ``pyproject.toml`` found by walking
+   up from the current directory.
 3. A user config file at ``<store_root>/config.toml`` (machine-wide prefs).
 4. Environment overrides (``AIRLOCK_*``).
 
 The store root defaults to ``~/airlock`` — deliberately *not* a dotdir, so a user
 can find reports easily when something fires. Nothing here reads the target
-repo; this only configures where output goes and how the LLM tier behaves.
+repo: source 2 is **refused if it resolves inside the scanned target tree**, so an
+untrusted repo can never reconfigure the scanner vetting it (#45). This module
+only configures where output goes and how the LLM tier behaves.
 """
 
 from __future__ import annotations
 
 import os
 import re
+import sys
 import tomllib
 from dataclasses import dataclass, field, fields, replace
 from pathlib import Path
@@ -233,19 +238,63 @@ def _apply_env(cfg: Config, environ: dict[str, str]) -> Config:
     return replace(cfg, **top)
 
 
+def _within_target(path: Path, target: Path | None) -> bool:
+    """True if ``path`` resolves inside ``target`` (so it must not be trusted)."""
+    if target is None:
+        return False
+    try:
+        return path.resolve().is_relative_to(target.resolve())
+    except (OSError, ValueError):
+        return False
+
+
+def _warn_target_config(path: Path) -> None:
+    print(
+        f"airlock: refusing to read config from inside the scanned target ({path}); "
+        "an untrusted repo must not reconfigure the scanner. Use --config or "
+        "AIRLOCK_CONFIG to point at a trusted file.",
+        file=sys.stderr,
+    )
+
+
 def load_config(
     *,
     pyproject: Path | None = None,
     environ: dict[str, str] | None = None,
+    config_path: Path | None = None,
+    target: Path | None = None,
 ) -> Config:
-    """Resolve configuration across all four sources (see module docstring)."""
+    """Resolve configuration across all four sources (see module docstring).
+
+    ``config_path`` (or the ``AIRLOCK_CONFIG`` env var) selects the project config
+    file explicitly, ahead of cwd discovery. ``target`` is the directory being
+    scanned: the project config is **never** read if it resolves inside that tree,
+    so an untrusted repo can't reconfigure the scanner vetting it (#45).
+    """
     environ = os.environ if environ is None else environ
     cfg = Config()
 
-    # 2. pyproject [tool.airlock]
-    pyproject = pyproject or _find_pyproject(Path.cwd())
-    if pyproject and pyproject.is_file():
-        cfg = _apply_table(cfg, _read_airlock_table(pyproject))
+    # 2. project config: explicit --config / AIRLOCK_CONFIG wins over cwd discovery;
+    #    a pyproject found by walking up from cwd is the fallback. Whatever is
+    #    chosen is refused if it lives inside the scanned target (#45).
+    explicit = config_path or (
+        Path(environ["AIRLOCK_CONFIG"]).expanduser() if environ.get("AIRLOCK_CONFIG") else None
+    )
+    if explicit is not None:
+        if not explicit.is_file():
+            print(f"airlock: warning: config file not found: {explicit}", file=sys.stderr)
+        elif _within_target(explicit, target):
+            _warn_target_config(explicit)
+        else:
+            # An explicit file may be a bare airlock table or a pyproject.
+            cfg = _apply_table(cfg, _read_user_config(explicit))
+    else:
+        pyproject = pyproject or _find_pyproject(Path.cwd())
+        if pyproject and pyproject.is_file():
+            if _within_target(pyproject, target):
+                _warn_target_config(pyproject)
+            else:
+                cfg = _apply_table(cfg, _read_airlock_table(pyproject))
 
     # Determine store_root early so the user config path can depend on it,
     # honoring an env override of the store root before reading the user file.

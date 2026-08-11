@@ -13,27 +13,34 @@ you override them from a config file or environment variables. Editing
 Later sources win over earlier ones:
 
 1. **Built-in defaults** — in `config.py` (`Config` / `LLMConfig` / …).
-2. **Project config** — a `[tool.airlock]` table in a `pyproject.toml`, found by
-   walking up from the **current working directory**.
+2. **Project config** — an explicit file passed with `--config <path>` (or the
+   `AIRLOCK_CONFIG` env var); if neither is set, a `[tool.airlock]` table in a
+   `pyproject.toml` found by walking up from the **current working directory**.
 3. **User config** — `~/airlock/config.toml` (your machine-wide preferences).
 4. **Environment variables** — `AIRLOCK_*` (per-shell / CI; highest priority).
 
-So an `AIRLOCK_*` env var beats your `~/airlock/config.toml`, which beats a
-project's `pyproject.toml`, which beats the built-in default.
+So an `AIRLOCK_*` env var beats your `~/airlock/config.toml`, which beats the
+project config (`--config` / `AIRLOCK_CONFIG` / a discovered `pyproject.toml`),
+which beats the built-in default.
 
 > The user config lives under the **store root**, which defaults to `~/airlock`.
 > Because the store-root location is needed to *find* the user config, set
 > `store_root` itself via `AIRLOCK_STORE_ROOT` or `pyproject.toml`, not inside
 > `~/airlock/config.toml`.
 
-> ⚠️ **The `pyproject.toml` source rarely does what you expect.** `bin/airlock`
-> and `scripts/vet.sh` `cd` into the airlock checkout before running the helper,
-> so the table they find is *airlock's own* `pyproject.toml` — not the scanned
-> target's, and not your project's. Prefer `~/airlock/config.toml` or `AIRLOCK_*`.
-> Tracked in [#45](https://github.com/flightpath-software/airlock-scan/issues/45).
+> **Which `pyproject.toml` is discovered depends on the entry point.** `bin/airlock`
+> and `scripts/vet.sh` `cd` into the airlock checkout before running the helper, so
+> cwd discovery finds *airlock's own* `pyproject.toml` — not your project's. To load
+> **your own** project defaults deliberately, pass `--config path/to/your.toml` (on
+> `vet` / `quarantine`) or set `AIRLOCK_CONFIG` (works everywhere, ideal for CI);
+> both take precedence over cwd discovery. Persistent machine-wide defaults still
+> live in `~/airlock/config.toml`, which is always loaded regardless of cwd.
+> Resolves [#45](https://github.com/flightpath-software/airlock-scan/issues/45).
 >
-> The **scanned target's** `pyproject.toml` is deliberately never read — an
-> untrusted repo must not be able to reconfigure the scanner vetting it.
+> 🔒 The **scanned target's** config is never read: the project config is refused if
+> it resolves inside the target tree — whether it was found by cwd discovery or
+> pointed at explicitly with `--config` — so an untrusted repo can't reconfigure the
+> scanner vetting it (a warning is printed when this happens).
 
 ## Your API key: the *name* vs the *value*
 

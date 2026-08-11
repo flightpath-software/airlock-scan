@@ -148,3 +148,51 @@ def test_env_override_bad_api_key_env_is_rejected(tmp_path):
             pyproject=tmp_path / "nope.toml",
             environ={"AIRLOCK_LLM_API_KEY_ENV": "bad-name-123"},
         )
+
+
+def test_explicit_config_path_wins_over_cwd(tmp_path):
+    cfgfile = tmp_path / "myconf.toml"
+    cfgfile.write_text('[tool.airlock.llm]\nmodel = "custom-model"\n', encoding="utf-8")
+    cfg = load_config(
+        config_path=cfgfile,
+        environ={"AIRLOCK_STORE_ROOT": str(tmp_path / "store")},
+    )
+    assert cfg.llm.model == "custom-model"
+
+
+def test_airlock_config_env_is_honored(tmp_path):
+    cfgfile = tmp_path / "envconf.toml"
+    cfgfile.write_text('[tool.airlock.llm]\nmodel = "env-model"\n', encoding="utf-8")
+    cfg = load_config(
+        environ={"AIRLOCK_CONFIG": str(cfgfile), "AIRLOCK_STORE_ROOT": str(tmp_path / "store")},
+    )
+    assert cfg.llm.model == "env-model"
+
+
+def test_config_explicitly_pointed_inside_target_is_refused(tmp_path, capsys):
+    # Even an explicit --config path is refused if it lives inside the scanned
+    # target, so an untrusted repo can't reconfigure the scanner (#45).
+    target = tmp_path / "untrusted-repo"
+    target.mkdir()
+    (target / "pyproject.toml").write_text(
+        '[tool.airlock.llm]\nmodel = "attacker-model"\n', encoding="utf-8"
+    )
+    cfg = load_config(
+        config_path=target / "pyproject.toml",
+        target=target,
+        environ={"AIRLOCK_STORE_ROOT": str(tmp_path / "store")},
+    )
+    assert cfg.llm.model != "attacker-model"
+    assert "refusing to read config from inside" in capsys.readouterr().err
+
+
+def test_cwd_pyproject_inside_target_is_refused(tmp_path, monkeypatch):
+    # Running from inside the target must not let its pyproject reconfigure us.
+    target = tmp_path / "repo"
+    target.mkdir()
+    (target / "pyproject.toml").write_text(
+        '[tool.airlock.llm]\nmodel = "attacker-model"\n', encoding="utf-8"
+    )
+    monkeypatch.chdir(target)
+    cfg = load_config(target=target, environ={"AIRLOCK_STORE_ROOT": str(tmp_path / "store")})
+    assert cfg.llm.model != "attacker-model"

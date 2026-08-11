@@ -1,0 +1,1 @@
+The project config is never read from inside the scanned target's directory tree — whether reached by directory discovery or pointed at explicitly with `--config` — so an untrusted repository cannot reconfigure the scanner that is vetting it. A warning is printed if a config file inside the target is skipped for this reason.
