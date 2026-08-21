@@ -1,0 +1,1 @@
+Require **uv >= 0.12** (`required-version`). uv 0.12 records the relative `exclude-newer` cooldown as a sentinel in `uv.lock`, so `uv lock --locked` stays stable; older uv silently strips that sentinel and corrupts the lockfile. The pin also fails closed — uv refuses to run below the required version.

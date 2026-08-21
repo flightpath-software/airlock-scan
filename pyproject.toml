@@ -35,10 +35,12 @@ build-backend = "uv_build"
 # Refuse to resolve any distribution younger than 3 days, to avoid pulling
 # freshly published (and not-yet-detected) malicious releases.
 #
-# Relative durations require uv >= 0.9.17. uv >= 0.11.8 writes a sentinel
-# timestamp into uv.lock for relative spans, so the rolling window does not
-# churn the lockfile or cause merge conflicts.
-required-version = ">=0.11.8"
+# We require uv >= 0.12: it parses the relative `exclude-newer` span AND records
+# a sentinel timestamp in uv.lock for it, so `uv lock --locked` stays stable as
+# the rolling 3-day window advances. Older uv omits that sentinel, which made CI
+# drift intermittently (a dep crossing the "3 days old" line flips the resolve) —
+# see #59 / #33. `required-version` also fails closed: uv refuses to run below it.
+required-version = ">=0.12"
 exclude-newer = "3 days"
 #
 # Emergency escape hatch: exempt a single package from the cooldown to take an

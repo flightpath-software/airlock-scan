@@ -38,7 +38,7 @@ see [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## Requirements
 
-- **uv ≥ 0.11.8** (`uv self update`) — required for the 3-day supply-chain cooldown.
+- **uv ≥ 0.12** (`uv self update`) — required for the 3-day supply-chain cooldown (it records the relative-span sentinel in `uv.lock`; older uv strips it).
 - **gum** — `brew install gum`
 - **Homebrew** — for `gitleaks` and `osv-scanner`
 - Python **3.12+** (uv will manage it)
@@ -84,7 +84,7 @@ configured in [`pyproject.toml`](pyproject.toml) to **never resolve a distributi
 
 ```toml
 [tool.uv]
-required-version = ">=0.11.8"
+required-version = ">=0.12"
 exclude-newer = "3 days"
 ```
 
