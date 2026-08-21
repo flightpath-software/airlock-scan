@@ -1,0 +1,1 @@
+The "no API key" error no longer echoes the configured `api_key_env` value, so a secret mistakenly pasted into that field (identifier-shaped tokens like `ghp_…`, `hf_…`, `AKIA…`) can no longer leak to stderr or CI logs.

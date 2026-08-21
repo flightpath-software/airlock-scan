@@ -288,9 +288,15 @@ def _resolve_backend(cfg, fake: bool):
         return FakeBackend()
     api_key = os.environ.get(cfg.llm.api_key_env)
     if not api_key and cfg.llm.provider != "local":
+        # Never interpolate the configured api_key_env value: a mis-pasted secret
+        # can be identifier-shaped and would leak to stderr / CI logs (#41). Keep
+        # the message a constant and state the *default* variable name as a plain
+        # literal (public, never a secret) — no key-named variable flows into the
+        # log, which also keeps CodeQL's clear-text-logging check clean.
         print(
-            f"airlock-helper: error: no API key in ${cfg.llm.api_key_env}. "
-            f"Set it, choose provider=local, or use --fake.",
+            "airlock-helper: error: no API key found in the configured environment "
+            "variable (default: OPENAI_API_KEY). Set it, choose provider=local, or "
+            "use --fake.",
             file=sys.stderr,
         )
         return None
@@ -318,6 +324,22 @@ def _print_canary_lines(canary_events: list[dict]) -> None:
         if span:
             line += f" — lines {span['start_line']}-{span['end_line']}"
         print(line)
+
+
+def _print_truncation_note(verdicts: list[dict]) -> None:
+    """Surface partially-reviewed (truncated) files in the console run output (#44).
+
+    A file larger than ``max_file_bytes`` is reviewed only up to the cap, so an
+    injection past it goes unseen. Both ``vet`` and ``quarantine`` call this so the
+    gap is visible in the run output, not only inside ``report.json``.
+    """
+    cut = [v for v in verdicts if v.get("truncated")]
+    if cut:
+        names = ", ".join(str(v.get("file_path")) for v in cut)
+        print(
+            f"  ⚠ {len(cut)} file(s) only partially reviewed — exceeded "
+            f"max_file_bytes, content past the cap was not seen: {names}"
+        )
 
 
 def _cmd_quarantine(args: argparse.Namespace) -> int:
@@ -373,6 +395,7 @@ def _cmd_quarantine(args: argparse.Namespace) -> int:
     for reason in decision.reasons:
         print(f"  - {reason}")
     _print_canary_lines(canary_events)
+    _print_truncation_note(verdicts)
     return 0 if decision.installable else 1
 
 
@@ -453,6 +476,7 @@ def _cmd_vet(args: argparse.Namespace) -> int:
     for reason in decision.reasons:
         print(f"  - {reason}")
     _print_canary_lines(canary_events)
+    _print_truncation_note(verdicts)
     print(f"run:    {store.run_dir}")
     print(f"report: {store.report_md_path}")
     return 0 if decision.installable else 1

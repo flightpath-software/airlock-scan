@@ -21,6 +21,9 @@ from dataclasses import dataclass, field, fields, replace
 from pathlib import Path
 
 DEFAULT_STORE_ROOT = "~/airlock"
+# The built-in default env-var NAME for the API key. It is a public constant, not
+# a secret, so it is the one api_key_env value safe to echo in diagnostics (#41).
+DEFAULT_API_KEY_ENV = "OPENAI_API_KEY"
 
 # `api_key_env` holds the NAME of an environment variable, never the key itself.
 # Requiring an identifier shape means a secret accidentally pasted there is
@@ -70,14 +73,16 @@ class LLMConfig:
     provider: str = "openai"  # label only; base_url drives the actual endpoint
     base_url: str = "https://api.openai.com/v1"
     model: str = "gpt-4o-mini"
-    api_key_env: str = "OPENAI_API_KEY"  # name of the env var holding the API key
+    api_key_env: str = DEFAULT_API_KEY_ENV  # NAME of the env var holding the API key
     # Used by the "local" preset (an OpenAI-compatible local server, e.g. Ollama).
     local_base_url: str = "http://localhost:11434/v1"
     local_model: str = "qwen2.5-coder"
     redact_tier1_secrets: bool = True
     temperature: float = 0.0
     request_timeout: int = 60
-    max_file_bytes: int = 200_000  # skip/chunk files larger than this
+    # Files larger than this are truncated to this many bytes and flagged as only
+    # partially reviewed in the report (not chunked; see #44).
+    max_file_bytes: int = 200_000
     max_files: int = 5  # safety/cost cap; raise with AIRLOCK_LLM_MAX_FILES
     gate_only_on_suspicious: bool = True
 
