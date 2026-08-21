@@ -126,6 +126,13 @@ def _build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Disable canary-fire bisection (cheaper; skips the extra probe calls).",
     )
+    quarantine.add_argument(
+        "--config",
+        type=Path,
+        default=None,
+        help="Path to a trusted airlock config file (overrides AIRLOCK_CONFIG and "
+        "cwd discovery; never read from inside the target).",
+    )
 
     # vet — the unified run: merge Tier-1 scanner output + Tier-2 quarantine.
     vet = sub.add_parser(
@@ -155,6 +162,13 @@ def _build_parser() -> argparse.ArgumentParser:
         "--no-localize",
         action="store_true",
         help="Disable canary-fire bisection (cheaper; skips the extra probe calls).",
+    )
+    vet.add_argument(
+        "--config",
+        type=Path,
+        default=None,
+        help="Path to a trusted airlock config file (overrides AIRLOCK_CONFIG and "
+        "cwd discovery; never read from inside the target).",
     )
 
     # eval — score the pipeline against a labeled corpus.
@@ -205,8 +219,11 @@ def _cmd_ingest(args: argparse.Namespace) -> int:
     report = build_report(findings, gate=gate, warnings=warnings)
     decision = decide(findings, gate=gate)
 
-    cfg = load_config()
-    target = str((args.target or args.results_dir))
+    # Guard against reading a [tool.airlock] from inside the scanned tree (#45):
+    # ingest knows the target, so pass it so cwd discovery is refused there too.
+    guard_target = (args.target or args.results_dir).expanduser().resolve()
+    cfg = load_config(target=guard_target)
+    target = str(guard_target)
     store = RunStore.create(
         cfg.store_root,
         target=target,
@@ -288,9 +305,15 @@ def _resolve_backend(cfg, fake: bool):
         return FakeBackend()
     api_key = os.environ.get(cfg.llm.api_key_env)
     if not api_key and cfg.llm.provider != "local":
+        # Never interpolate the configured api_key_env value: a mis-pasted secret
+        # can be identifier-shaped and would leak to stderr / CI logs (#41). Keep
+        # the message a constant and state the *default* variable name as a plain
+        # literal (public, never a secret) — no key-named variable flows into the
+        # log, which also keeps CodeQL's clear-text-logging check clean.
         print(
-            f"airlock-helper: error: no API key in ${cfg.llm.api_key_env}. "
-            f"Set it, choose provider=local, or use --fake.",
+            "airlock-helper: error: no API key found in the configured environment "
+            "variable (default: OPENAI_API_KEY). Set it, choose provider=local, or "
+            "use --fake.",
             file=sys.stderr,
         )
         return None
@@ -320,6 +343,22 @@ def _print_canary_lines(canary_events: list[dict]) -> None:
         print(line)
 
 
+def _print_truncation_note(verdicts: list[dict]) -> None:
+    """Surface partially-reviewed (truncated) files in the console run output (#44).
+
+    A file larger than ``max_file_bytes`` is reviewed only up to the cap, so an
+    injection past it goes unseen. Both ``vet`` and ``quarantine`` call this so the
+    gap is visible in the run output, not only inside ``report.json``.
+    """
+    cut = [v for v in verdicts if v.get("truncated")]
+    if cut:
+        names = ", ".join(str(v.get("file_path")) for v in cut)
+        print(
+            f"  ⚠ {len(cut)} file(s) only partially reviewed — exceeded "
+            f"max_file_bytes, content past the cap was not seen: {names}"
+        )
+
+
 def _cmd_quarantine(args: argparse.Namespace) -> int:
     from airlock_scan.canary import build_canary_set
     from airlock_scan.config import load_config
@@ -328,11 +367,11 @@ def _cmd_quarantine(args: argparse.Namespace) -> int:
     from airlock_scan.quarantine import QuarantineReviewer, review_tree
     from airlock_scan.store import RunStore
 
-    cfg = load_config()
     target = args.target.expanduser().resolve()
     if not target.is_dir():
         print(f"airlock-helper: error: not a directory: {target}", file=sys.stderr)
         return 2
+    cfg = load_config(config_path=args.config, target=target)
 
     backend = _resolve_backend(cfg, args.fake)
     if backend is None:
@@ -373,6 +412,7 @@ def _cmd_quarantine(args: argparse.Namespace) -> int:
     for reason in decision.reasons:
         print(f"  - {reason}")
     _print_canary_lines(canary_events)
+    _print_truncation_note(verdicts)
     return 0 if decision.installable else 1
 
 
@@ -388,11 +428,11 @@ def _cmd_vet(args: argparse.Namespace) -> int:
     from airlock_scan.report import build_report, render_markdown
     from airlock_scan.store import RunStore
 
-    cfg = load_config()
     target = args.target.expanduser().resolve()
     if not target.is_dir():
         print(f"airlock-helper: error: not a directory: {target}", file=sys.stderr)
         return 2
+    cfg = load_config(config_path=args.config, target=target)
 
     # Tier-1: optional deterministic findings produced by the shell scanners.
     findings, warnings = ([], [])
@@ -453,6 +493,7 @@ def _cmd_vet(args: argparse.Namespace) -> int:
     for reason in decision.reasons:
         print(f"  - {reason}")
     _print_canary_lines(canary_events)
+    _print_truncation_note(verdicts)
     print(f"run:    {store.run_dir}")
     print(f"report: {store.report_md_path}")
     return 0 if decision.installable else 1
@@ -472,8 +513,8 @@ def _cmd_eval(args: argparse.Namespace) -> int:
     from airlock_scan.llm_backend import FakeBackend
     from airlock_scan.quarantine import QuarantineReviewer
 
-    cfg = load_config()
     root = args.corpus.expanduser().resolve()
+    cfg = load_config(target=root)
     if not (root / "labels.json").is_file():
         print(f"airlock-helper: error: no labels.json in {root}", file=sys.stderr)
         return 2

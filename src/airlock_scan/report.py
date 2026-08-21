@@ -206,6 +206,19 @@ def render_markdown(
         else:
             lines.append("_Nothing flagged._")
 
+        # Partially-reviewed files: make the coverage gap visible rather than
+        # silent. A file larger than max_file_bytes is reviewed only up to the
+        # cap, so an injection past it would go unseen (see #44).
+        partially_reviewed = [v for v in file_verdicts if v.get("truncated")]
+        if partially_reviewed:
+            names = ", ".join(f"`{_md_cell(v.get('file_path'))}`" for v in partially_reviewed)
+            lines.append("")
+            lines.append(
+                f"> ⚠ {len(partially_reviewed)} file(s) exceeded `max_file_bytes` and were "
+                f"**only partially reviewed** — content past the cap was not seen by "
+                f"Tier-2: {names}"
+            )
+
     for warning in report.warnings:
         lines.append(f"\n> warning: {_md_cell(warning)}")
     return "\n".join(lines) + "\n"
