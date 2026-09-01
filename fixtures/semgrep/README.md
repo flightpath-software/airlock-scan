@@ -12,7 +12,8 @@ right place, not just "something fired."
 | Folder | Contains |
 |---|---|
 | `python/` | Fixtures for `config/semgrep/injection-taint-python.yaml` |
-| `javascript/` | Fixtures for `config/semgrep/injection-taint-javascript.yaml` |
+| `javascript/` | Fixtures for `config/semgrep/injection-taint-javascript.yaml` (the `javascript` half) |
+| `typescript/` | Fixtures for `config/semgrep/injection-taint-javascript.yaml` (the `typescript` half — same pack, split out to prove Semgrep's TS parser resolves the same source→sink flows) |
 
 Each rule gets a pair of files:
 

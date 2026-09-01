@@ -73,6 +73,42 @@
       "language": "javascript",
       "expect_fires": [],
       "sink_line": null
+    },
+    {
+      "path": "typescript/exec_positive.ts",
+      "language": "typescript",
+      "expect_fires": ["airlock-js-untrusted-input-to-exec"],
+      "sink_line": 5
+    },
+    {
+      "path": "typescript/exec_negative.ts",
+      "language": "typescript",
+      "expect_fires": [],
+      "sink_line": null
+    },
+    {
+      "path": "typescript/eval_positive.ts",
+      "language": "typescript",
+      "expect_fires": ["airlock-js-untrusted-input-to-eval"],
+      "sink_line": 3
+    },
+    {
+      "path": "typescript/eval_negative.ts",
+      "language": "typescript",
+      "expect_fires": [],
+      "sink_line": null
+    },
+    {
+      "path": "typescript/exfil_positive.ts",
+      "language": "typescript",
+      "expect_fires": ["airlock-js-secret-or-file-exfiltration"],
+      "sink_line": 10
+    },
+    {
+      "path": "typescript/exfil_negative.ts",
+      "language": "typescript",
+      "expect_fires": [],
+      "sink_line": null
     }
   ]
 }
