@@ -1,0 +1,78 @@
+{
+  "schema_version": "1.0",
+  "description": "Ground truth for the taint-pack fixtures; schema in README.md.",
+  "items": [
+    {
+      "path": "python/shell_positive.py",
+      "language": "python",
+      "expect_fires": ["airlock-untrusted-input-to-shell"],
+      "sink_line": 7
+    },
+    {
+      "path": "python/shell_negative.py",
+      "language": "python",
+      "expect_fires": [],
+      "sink_line": null
+    },
+    {
+      "path": "python/eval_positive.py",
+      "language": "python",
+      "expect_fires": ["airlock-untrusted-input-to-eval"],
+      "sink_line": 6
+    },
+    {
+      "path": "python/eval_negative.py",
+      "language": "python",
+      "expect_fires": [],
+      "sink_line": null
+    },
+    {
+      "path": "python/exfil_positive.py",
+      "language": "python",
+      "expect_fires": ["airlock-secret-or-file-exfiltration"],
+      "sink_line": 7
+    },
+    {
+      "path": "python/exfil_negative.py",
+      "language": "python",
+      "expect_fires": [],
+      "sink_line": null
+    },
+    {
+      "path": "javascript/exec_positive.js",
+      "language": "javascript",
+      "expect_fires": ["airlock-js-untrusted-input-to-exec"],
+      "sink_line": 5
+    },
+    {
+      "path": "javascript/exec_negative.js",
+      "language": "javascript",
+      "expect_fires": [],
+      "sink_line": null
+    },
+    {
+      "path": "javascript/eval_positive.js",
+      "language": "javascript",
+      "expect_fires": ["airlock-js-untrusted-input-to-eval"],
+      "sink_line": 3
+    },
+    {
+      "path": "javascript/eval_negative.js",
+      "language": "javascript",
+      "expect_fires": [],
+      "sink_line": null
+    },
+    {
+      "path": "javascript/exfil_positive.js",
+      "language": "javascript",
+      "expect_fires": ["airlock-js-secret-or-file-exfiltration"],
+      "sink_line": 5
+    },
+    {
+      "path": "javascript/exfil_negative.js",
+      "language": "javascript",
+      "expect_fires": [],
+      "sink_line": null
+    }
+  ]
+}
