@@ -3,24 +3,32 @@
 Resolution precedence (later wins):
 
 1. Built-in defaults (see :class:`Config`).
-2. ``[tool.airlock]`` in a project ``pyproject.toml`` (repo-level defaults).
+2. Project config: an explicit ``--config`` / ``AIRLOCK_CONFIG`` file if given,
+   otherwise a ``[tool.airlock]`` table in a ``pyproject.toml`` found by walking
+   up from the current directory.
 3. A user config file at ``<store_root>/config.toml`` (machine-wide prefs).
 4. Environment overrides (``AIRLOCK_*``).
 
 The store root defaults to ``~/airlock`` — deliberately *not* a dotdir, so a user
 can find reports easily when something fires. Nothing here reads the target
-repo; this only configures where output goes and how the LLM tier behaves.
+repo: source 2 is **refused if it resolves inside the scanned target tree**, so an
+untrusted repo can never reconfigure the scanner vetting it (#45). This module
+only configures where output goes and how the LLM tier behaves.
 """
 
 from __future__ import annotations
 
 import os
 import re
+import sys
 import tomllib
 from dataclasses import dataclass, field, fields, replace
 from pathlib import Path
 
 DEFAULT_STORE_ROOT = "~/airlock"
+# The built-in default env-var NAME for the API key. It is a public constant, not
+# a secret, so it is the one api_key_env value safe to echo in diagnostics (#41).
+DEFAULT_API_KEY_ENV = "OPENAI_API_KEY"
 
 # `api_key_env` holds the NAME of an environment variable, never the key itself.
 # Requiring an identifier shape means a secret accidentally pasted there is
@@ -70,14 +78,16 @@ class LLMConfig:
     provider: str = "openai"  # label only; base_url drives the actual endpoint
     base_url: str = "https://api.openai.com/v1"
     model: str = "gpt-4o-mini"
-    api_key_env: str = "OPENAI_API_KEY"  # name of the env var holding the API key
+    api_key_env: str = DEFAULT_API_KEY_ENV  # NAME of the env var holding the API key
     # Used by the "local" preset (an OpenAI-compatible local server, e.g. Ollama).
     local_base_url: str = "http://localhost:11434/v1"
     local_model: str = "qwen2.5-coder"
     redact_tier1_secrets: bool = True
     temperature: float = 0.0
     request_timeout: int = 60
-    max_file_bytes: int = 200_000  # skip/chunk files larger than this
+    # Files larger than this are truncated to this many bytes and flagged as only
+    # partially reviewed in the report (not chunked; see #44).
+    max_file_bytes: int = 200_000
     max_files: int = 5  # safety/cost cap; raise with AIRLOCK_LLM_MAX_FILES
     gate_only_on_suspicious: bool = True
 
@@ -233,19 +243,73 @@ def _apply_env(cfg: Config, environ: dict[str, str]) -> Config:
     return replace(cfg, **top)
 
 
+def _within_target(path: Path, target: Path | None) -> bool:
+    """True if ``path`` is located inside ``target`` (so it must not be trusted).
+
+    Checks the path both symlink-resolved (catches a symlink *outside* the target
+    pointing in) and as a lexical absolute path (catches a symlink *inside* the
+    target pointing out, and normalizes ``..``). Fails **closed**: if a path can't
+    be resolved, treat it as inside the target and refuse it.
+    """
+    if target is None:
+        return False
+    try:
+        troot = os.path.realpath(target).rstrip(os.sep)
+        candidates = [os.path.normpath(os.path.abspath(path)), os.path.realpath(path)]
+    except OSError:
+        return True
+    return any(c == troot or c.startswith(troot + os.sep) for c in candidates)
+
+
+def _warn_target_config(path: Path) -> None:
+    print(
+        f"airlock-helper: refusing to read config from inside the scanned target "
+        f"({path}); an untrusted repo must not reconfigure the scanner. Use --config "
+        "or AIRLOCK_CONFIG to point at a trusted file.",
+        file=sys.stderr,
+    )
+
+
 def load_config(
     *,
     pyproject: Path | None = None,
     environ: dict[str, str] | None = None,
+    config_path: Path | None = None,
+    target: Path | None = None,
 ) -> Config:
-    """Resolve configuration across all four sources (see module docstring)."""
+    """Resolve configuration across all four sources (see module docstring).
+
+    ``config_path`` (or the ``AIRLOCK_CONFIG`` env var) selects the project config
+    file explicitly, ahead of cwd discovery. ``target`` is the directory being
+    scanned: the project config is **never** read if it resolves inside that tree,
+    so an untrusted repo can't reconfigure the scanner vetting it (#45).
+    """
     environ = os.environ if environ is None else environ
     cfg = Config()
 
-    # 2. pyproject [tool.airlock]
-    pyproject = pyproject or _find_pyproject(Path.cwd())
-    if pyproject and pyproject.is_file():
-        cfg = _apply_table(cfg, _read_airlock_table(pyproject))
+    # 2. project config: explicit --config / AIRLOCK_CONFIG wins over cwd discovery;
+    #    a pyproject found by walking up from cwd is the fallback. Whatever is
+    #    chosen is refused if it lives inside the scanned target (#45).
+    explicit: Path | None = None
+    if config_path is not None:
+        explicit = config_path.expanduser()
+    elif environ.get("AIRLOCK_CONFIG"):
+        explicit = Path(environ["AIRLOCK_CONFIG"]).expanduser()
+    if explicit is not None:
+        if not explicit.is_file():
+            print(f"airlock-helper: warning: config file not found: {explicit}", file=sys.stderr)
+        elif _within_target(explicit, target):
+            _warn_target_config(explicit)
+        else:
+            # An explicit file may be a bare airlock table or a pyproject.
+            cfg = _apply_table(cfg, _read_user_config(explicit))
+    else:
+        pyproject = pyproject or _find_pyproject(Path.cwd())
+        if pyproject and pyproject.is_file():
+            if _within_target(pyproject, target):
+                _warn_target_config(pyproject)
+            else:
+                cfg = _apply_table(cfg, _read_airlock_table(pyproject))
 
     # Determine store_root early so the user config path can depend on it,
     # honoring an env override of the store root before reading the user file.

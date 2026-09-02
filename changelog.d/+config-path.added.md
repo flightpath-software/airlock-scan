@@ -1,0 +1,1 @@
+You can now point airlock at a specific config file with `--config <path>` (on `vet` and `quarantine`) or the `AIRLOCK_CONFIG` environment variable; both take precedence over walking up from the current directory, so your own project defaults are loaded deliberately rather than by accident.

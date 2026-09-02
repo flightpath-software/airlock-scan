@@ -13,27 +13,38 @@ you override them from a config file or environment variables. Editing
 Later sources win over earlier ones:
 
 1. **Built-in defaults** — in `config.py` (`Config` / `LLMConfig` / …).
-2. **Project config** — a `[tool.airlock]` table in a `pyproject.toml`, found by
-   walking up from the **current working directory**.
+2. **Project config** — an explicit file passed with `--config <path>` (or the
+   `AIRLOCK_CONFIG` env var); if neither is set, a `[tool.airlock]` table in a
+   `pyproject.toml` found by walking up from the **current working directory**.
 3. **User config** — `~/airlock/config.toml` (your machine-wide preferences).
 4. **Environment variables** — `AIRLOCK_*` (per-shell / CI; highest priority).
 
-So an `AIRLOCK_*` env var beats your `~/airlock/config.toml`, which beats a
-project's `pyproject.toml`, which beats the built-in default.
+So an `AIRLOCK_*` env var beats your `~/airlock/config.toml`, which beats the
+project config (`--config` / `AIRLOCK_CONFIG` / a discovered `pyproject.toml`),
+which beats the built-in default.
 
 > The user config lives under the **store root**, which defaults to `~/airlock`.
 > Because the store-root location is needed to *find* the user config, set
 > `store_root` itself via `AIRLOCK_STORE_ROOT` or `pyproject.toml`, not inside
 > `~/airlock/config.toml`.
 
-> ⚠️ **The `pyproject.toml` source rarely does what you expect.** `bin/airlock`
-> and `scripts/vet.sh` `cd` into the airlock checkout before running the helper,
-> so the table they find is *airlock's own* `pyproject.toml` — not the scanned
-> target's, and not your project's. Prefer `~/airlock/config.toml` or `AIRLOCK_*`.
-> Tracked in [#45](https://github.com/flightpath-software/airlock-scan/issues/45).
+> **Which `pyproject.toml` is discovered depends on the entry point.** `bin/airlock`
+> and `scripts/vet.sh` `cd` into the airlock checkout before running the helper, so
+> cwd discovery finds *airlock's own* `pyproject.toml` — not your project's. To load
+> **your own** project defaults deliberately, pass `--config path/to/your.toml` (on
+> `vet` / `quarantine`) or set `AIRLOCK_CONFIG` (works everywhere, ideal for CI);
+> both take precedence over cwd discovery, and `--config` accepts either a bare
+> airlock table or a `[tool.airlock]` pyproject. Under `bin/airlock` /
+> `scripts/vet.sh`, give an **absolute** path — a relative one resolves against the
+> airlock checkout, since the launcher changes directory first.
+> Persistent machine-wide defaults still
+> live in `~/airlock/config.toml`, which is always loaded regardless of cwd.
+> Resolves [#45](https://github.com/flightpath-software/airlock-scan/issues/45).
 >
-> The **scanned target's** `pyproject.toml` is deliberately never read — an
-> untrusted repo must not be able to reconfigure the scanner vetting it.
+> 🔒 The **scanned target's** config is never read: the project config is refused if
+> it resolves inside the target tree — whether it was found by cwd discovery or
+> pointed at explicitly with `--config` — so an untrusted repo can't reconfigure the
+> scanner vetting it (a warning is printed when this happens).
 
 ## Your API key: the *name* vs the *value*
 
@@ -119,7 +130,7 @@ model = "gpt-4o"    # ← ignored: the [llm] header is commented out
 # redact_tier1_secrets = true                   # NOT YET WIRED UP — see #42
 # temperature    = 0.0
 # request_timeout = 60
-# max_file_bytes  = 200000                       # per-file review cap; the rest is truncated (#44)
+# max_file_bytes  = 200000                       # per-file review cap; larger files are truncated + flagged partially reviewed
 # max_files       = 5                            # per-run cost/safety cap
 # gate_only_on_suspicious = true
 
@@ -134,12 +145,13 @@ model = "gpt-4o"    # ← ignored: the [llm] header is commented out
 # bisect_on_fire = true
 ```
 
-Two fields above don't currently do what their names suggest — noted inline and
-tracked in [#42](https://github.com/flightpath-software/airlock-scan/issues/42)
+One field above still doesn't do what its name suggests — tracked in
+[#42](https://github.com/flightpath-software/airlock-scan/issues/42)
 (`redact_tier1_secrets` has no consumer, so Tier-1 secrets are **not** masked
-before a Tier-2 call) and
-[#44](https://github.com/flightpath-software/airlock-scan/issues/44)
-(`max_file_bytes` truncates: content past the cap gets no Tier-2 review).
+before a Tier-2 call). `max_file_bytes` does not chunk either: a file larger than
+the cap is reviewed only up to it, but the run now flags any such file as **only
+partially reviewed** in the report, so the coverage gap is visible rather than
+silent (see [#44](https://github.com/flightpath-software/airlock-scan/issues/44)).
 
 ## Environment variables
 
@@ -222,7 +234,8 @@ export AIRLOCK_STORE_ROOT="/data/airlock-runs"
 [ -n "$GROQ_API_KEY" ] && echo "key is set"   # confirms without printing the secret
 airlock-helper quarantine <some-dir>          # or: airlock  → runs a Tier-2 review
 ```
-If the key isn't set you'll see `error: no API key in $GROQ_API_KEY`. That
-message prints whatever you configured as `api_key_env` — which is why that
-field must hold the variable's *name* and never the key itself (see the warning
-above and [#41](https://github.com/flightpath-software/airlock-scan/issues/41)).
+If the key isn't set you'll see an `error: no API key found ...` message. It does
+**not** print your configured `api_key_env` value, so a mis-pasted secret can't
+leak there ([#41](https://github.com/flightpath-software/airlock-scan/issues/41)).
+The field must still hold the variable's *name* and never the key itself (see the
+warning above).

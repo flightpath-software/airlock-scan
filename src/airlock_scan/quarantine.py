@@ -152,6 +152,7 @@ class FileVerdict:
     status: str
     findings: list[str] = field(default_factory=list)
     request_id: str = ""
+    truncated: bool = False  # file exceeded max_file_bytes; only the head was reviewed
 
     def as_dict(self) -> dict:
         return {
@@ -162,6 +163,7 @@ class FileVerdict:
             "summary": self.summary,
             "findings": self.findings,
             "request_id": self.request_id,
+            "truncated": self.truncated,
         }
 
 
@@ -203,13 +205,14 @@ class QuarantineReviewer:
         request_id: str | None = None,
     ) -> ReviewOutcome:
         request_id = request_id or os.urandom(8).hex()
-        truncated = content[: self.max_file_bytes]
-        text = truncated.decode("utf-8", errors="replace")
+        was_truncated = len(content) > self.max_file_bytes
+        head = content[: self.max_file_bytes]
+        text = head.decode("utf-8", errors="replace")
         text = redact(text, secrets)
 
         nonce = os.urandom(8).hex()
         user = spotlight(text, nonce)
-        if len(content) > self.max_file_bytes:
+        if was_truncated:
             user += "\n[note: file truncated for review]"
 
         sent_bytes = user.encode("utf-8")
@@ -218,7 +221,9 @@ class QuarantineReviewer:
             self.store.record_ingested(request_id, file_path, sent_bytes)
 
         response = self.backend.complete(system=SYSTEM_PROMPT, user=user, tools=self.tools)
-        return self._classify(file_path, request_id, content_sha, response, text)
+        return self._classify(
+            file_path, request_id, content_sha, response, text, truncated=was_truncated
+        )
 
     def _classify(
         self,
@@ -227,6 +232,8 @@ class QuarantineReviewer:
         content_sha: str,
         response: BackendResponse,
         text: str = "",
+        *,
+        truncated: bool = False,
     ) -> ReviewOutcome:
         fired = [tc for tc in response.tool_calls if tc.name in self.canary_sanitized_names]
         if fired:
@@ -260,6 +267,7 @@ class QuarantineReviewer:
                 status=STATUS_HUMAN_REVIEW,
                 findings=[f"decoy {canonical} invoked"],
                 request_id=request_id,
+                truncated=truncated,
             )
             return ReviewOutcome(verdict=verdict, canary_event=event)
 
@@ -277,6 +285,7 @@ class QuarantineReviewer:
                     status=STATUS_OK,
                     findings=list(a.get("findings", []) or []),
                     request_id=request_id,
+                    truncated=truncated,
                 )
             )
 
@@ -289,6 +298,7 @@ class QuarantineReviewer:
                 summary="no structured verdict returned",
                 status=STATUS_NEEDS_REVIEW,
                 request_id=request_id,
+                truncated=truncated,
             )
         )
 

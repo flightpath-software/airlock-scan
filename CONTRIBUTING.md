@@ -83,19 +83,29 @@ uv run ruff check .           # lint (line-length 100, py312)
 
 ### Commits — Conventional Commits (enforced)
 
-Write commit messages as [Conventional Commits](https://www.conventionalcommits.org/):
-`type(scope): summary` — e.g. `feat(scanner): add yara adapter`, `fix(canary): …`,
-`docs(adr): …`. CI runs `cz check` over the PR's commits and **fails the PR** on a
-non-conforming message. The commit template pre-fills the guidance:
+Write commit messages as [Conventional Commits](https://www.conventionalcommits.org/)
 
+Format:  `<type>(<optional scope>): <summary>`
+
+Examples:
+- `chore: update readme with conventional commits info`
+- `feat(scanner): add yara adapter`
+- `fix(canary): close untrapped exception error`
+- `docs(adr): adding ADR-0007`
+
+CI runs `cz check` over the PR's commits and **fails the PR** on a
+non-conforming message. 
+
+Different types will bump the SemVer release version accordingly on release
+which is different while in pre-release.
+
+See: [`docs/commits.md`](docs/commits.md).
+
+There is a guided commit cli that pre-fills commit message with guidance:
 ```bash
 git config commit.template .gitmessage.txt   # one-time
 uv run cz commit                             # guided commit (recommended)
 ```
-
-Types: `feat` (MINOR), `fix`/`perf`/`refactor` (PATCH), `docs`, `test`, `build`, `ci`, `chore`.
-Pre-1.0, breaking changes bump MINOR (`major_version_zero = true`). More in
-[`docs/commits.md`](docs/commits.md).
 
 ### Testing policy
 
