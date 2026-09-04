@@ -20,6 +20,9 @@ and [`docs/canary-tripwires.md`](docs/canary-tripwires.md) for the canary design
   `gate`, `llm_backend`, `quarantine`, `parsers`, `report`.
 - `data/` — human source of the harness-signature dataset (packaged JSON lives in `src/`).
 - `corpus/` — labeled evaluation fixtures. **See the warning below.**
+- `fixtures/` — labeled static-analysis fixtures (e.g. Semgrep taint-pack source→sink
+  samples). Intentionally vulnerable code, not prompt-injection payloads — distinct from
+  `corpus/` above.
 - `tests/` — pytest suite. `docs/` — all long-form docs.
 
 ## ⚠ `corpus/` contains synthetic prompt-injection samples — treat as inert data

@@ -94,7 +94,7 @@ milestone table in §4 for acceptance criteria.
 - [x] Semgrep taint pack (Python + JS/TS) under `config/semgrep/`
 - [x] `scanners/semgrep.sh` runs the bundled pack alongside `--config auto`
 - [x] Gate logic BLOCK/NEEDS_REVIEW/WARN/CLEAN, Tier-1 authoritative (`gate.py`)
-- [ ] Live Semgrep run validation on labeled source→sink fixtures (needs semgrep installed)
+- [x] Live Semgrep run validation on labeled source→sink fixtures (needs semgrep installed)
 
 **M2 — Strategy B: Dual-LLM quarantine** ✅
 - [x] Per-file map-reduce reviewer, nonce-fence spotlighting (`quarantine.py`)
