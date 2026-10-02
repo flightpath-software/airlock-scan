@@ -133,6 +133,7 @@ bump_message = "bump: $current_version \u2192 $new_version"
 dev = [
     "commitizen>=4.16.2",
     "pytest>=9.0.3",
+    "pyyaml>=6.0.3",
     "ruff>=0.16.0",
     "towncrier>=25.8.0",
 ]
