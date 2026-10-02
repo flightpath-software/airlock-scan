@@ -229,6 +229,330 @@
       "language": "typescript",
       "expect_fires": [],
       "sink_line": null
+    },
+    {
+      "path": "javascript/exec_env_to_childprocessexec_positive.js",
+      "language": "javascript",
+      "expect_fires": ["airlock-js-untrusted-input-to-exec"],
+      "sink_line": 5
+    },
+    {
+      "path": "javascript/exec_env_to_childprocessexec_negative.js",
+      "language": "javascript",
+      "expect_fires": [],
+      "sink_line": null
+    },
+    {
+      "path": "javascript/exec_readfilesync_to_cpexec_positive.js",
+      "language": "javascript",
+      "expect_fires": ["airlock-js-untrusted-input-to-exec"],
+      "sink_line": 6
+    },
+    {
+      "path": "javascript/exec_readfilesync_to_cpexec_negative.js",
+      "language": "javascript",
+      "expect_fires": [],
+      "sink_line": null
+    },
+    {
+      "path": "javascript/exec_readfilearrow_to_exec_positive.js",
+      "language": "javascript",
+      "expect_fires": ["airlock-js-untrusted-input-to-exec"],
+      "sink_line": 5
+    },
+    {
+      "path": "javascript/exec_readfilearrow_to_exec_negative.js",
+      "language": "javascript",
+      "expect_fires": [],
+      "sink_line": null
+    },
+    {
+      "path": "javascript/exec_readfilefunction_to_spawnsync_positive.js",
+      "language": "javascript",
+      "expect_fires": ["airlock-js-untrusted-input-to-exec"],
+      "sink_line": 5
+    },
+    {
+      "path": "javascript/exec_readfilefunction_to_spawnsync_negative.js",
+      "language": "javascript",
+      "expect_fires": [],
+      "sink_line": null
+    },
+    {
+      "path": "javascript/eval_env_to_newfunction_positive.js",
+      "language": "javascript",
+      "expect_fires": ["airlock-js-untrusted-input-to-eval"],
+      "sink_line": 3
+    },
+    {
+      "path": "javascript/eval_env_to_newfunction_negative.js",
+      "language": "javascript",
+      "expect_fires": [],
+      "sink_line": null
+    },
+    {
+      "path": "javascript/eval_argv_to_eval_positive.js",
+      "language": "javascript",
+      "expect_fires": ["airlock-js-untrusted-input-to-eval"],
+      "sink_line": 3
+    },
+    {
+      "path": "javascript/eval_argv_to_eval_negative.js",
+      "language": "javascript",
+      "expect_fires": [],
+      "sink_line": null
+    },
+    {
+      "path": "javascript/eval_readfilesync_to_eval_positive.js",
+      "language": "javascript",
+      "expect_fires": ["airlock-js-untrusted-input-to-eval"],
+      "sink_line": 5
+    },
+    {
+      "path": "javascript/eval_readfilesync_to_eval_negative.js",
+      "language": "javascript",
+      "expect_fires": [],
+      "sink_line": null
+    },
+    {
+      "path": "javascript/eval_readfilearrow_to_eval_positive.js",
+      "language": "javascript",
+      "expect_fires": ["airlock-js-untrusted-input-to-eval"],
+      "sink_line": 3
+    },
+    {
+      "path": "javascript/eval_readfilearrow_to_eval_negative.js",
+      "language": "javascript",
+      "expect_fires": [],
+      "sink_line": null
+    },
+    {
+      "path": "javascript/eval_readfilefunction_to_function_positive.js",
+      "language": "javascript",
+      "expect_fires": ["airlock-js-untrusted-input-to-eval"],
+      "sink_line": 3
+    },
+    {
+      "path": "javascript/eval_readfilefunction_to_function_negative.js",
+      "language": "javascript",
+      "expect_fires": [],
+      "sink_line": null
+    },
+    {
+      "path": "javascript/exfil_env_to_axiosget_positive.js",
+      "language": "javascript",
+      "expect_fires": ["airlock-js-secret-or-file-exfiltration"],
+      "sink_line": 5
+    },
+    {
+      "path": "javascript/exfil_env_to_axiosget_negative.js",
+      "language": "javascript",
+      "expect_fires": [],
+      "sink_line": null
+    },
+    {
+      "path": "javascript/exfil_readfilearrow_to_httpsrequest_positive.js",
+      "language": "javascript",
+      "expect_fires": ["airlock-js-secret-or-file-exfiltration"],
+      "sink_line": 5
+    },
+    {
+      "path": "javascript/exfil_readfilearrow_to_httpsrequest_negative.js",
+      "language": "javascript",
+      "expect_fires": [],
+      "sink_line": null
+    },
+    {
+      "path": "javascript/exfil_readfilefunction_to_fetch_positive.js",
+      "language": "javascript",
+      "expect_fires": ["airlock-js-secret-or-file-exfiltration"],
+      "sink_line": 3
+    },
+    {
+      "path": "javascript/exfil_readfilefunction_to_fetch_negative.js",
+      "language": "javascript",
+      "expect_fires": [],
+      "sink_line": null
+    },
+    {
+      "path": "python/shell_envsubscript_to_checkoutput_positive.py",
+      "language": "python",
+      "expect_fires": ["airlock-untrusted-input-to-shell"],
+      "sink_line": 7
+    },
+    {
+      "path": "python/shell_envsubscript_to_checkoutput_negative.py",
+      "language": "python",
+      "expect_fires": [],
+      "sink_line": null
+    },
+    {
+      "path": "python/shell_stdin_to_popen_positive.py",
+      "language": "python",
+      "expect_fires": ["airlock-untrusted-input-to-shell"],
+      "sink_line": 7
+    },
+    {
+      "path": "python/shell_stdin_to_popen_negative.py",
+      "language": "python",
+      "expect_fires": [],
+      "sink_line": null
+    },
+    {
+      "path": "python/shell_openread_to_system_positive.py",
+      "language": "python",
+      "expect_fires": ["airlock-untrusted-input-to-shell"],
+      "sink_line": 6
+    },
+    {
+      "path": "python/shell_openread_to_system_negative.py",
+      "language": "python",
+      "expect_fires": [],
+      "sink_line": null
+    },
+    {
+      "path": "python/eval_argv_to_import_positive.py",
+      "language": "python",
+      "expect_fires": ["airlock-untrusted-input-to-eval"],
+      "sink_line": 6
+    },
+    {
+      "path": "python/eval_argv_to_import_negative.py",
+      "language": "python",
+      "expect_fires": [],
+      "sink_line": null
+    },
+    {
+      "path": "python/eval_input_to_eval_positive.py",
+      "language": "python",
+      "expect_fires": ["airlock-untrusted-input-to-eval"],
+      "sink_line": 3
+    },
+    {
+      "path": "python/eval_input_to_eval_negative.py",
+      "language": "python",
+      "expect_fires": [],
+      "sink_line": null
+    },
+    {
+      "path": "python/eval_getenv_to_exec_positive.py",
+      "language": "python",
+      "expect_fires": ["airlock-untrusted-input-to-eval"],
+      "sink_line": 6
+    },
+    {
+      "path": "python/eval_getenv_to_exec_negative.py",
+      "language": "python",
+      "expect_fires": [],
+      "sink_line": null
+    },
+    {
+      "path": "python/eval_envsubscript_to_compile_positive.py",
+      "language": "python",
+      "expect_fires": ["airlock-untrusted-input-to-eval"],
+      "sink_line": 6
+    },
+    {
+      "path": "python/eval_envsubscript_to_compile_negative.py",
+      "language": "python",
+      "expect_fires": [],
+      "sink_line": null
+    },
+    {
+      "path": "python/exfil_envdict_to_requestsget_positive.py",
+      "language": "python",
+      "expect_fires": ["airlock-secret-or-file-exfiltration"],
+      "sink_line": 7
+    },
+    {
+      "path": "python/exfil_envdict_to_requestsget_negative.py",
+      "language": "python",
+      "expect_fires": [],
+      "sink_line": null
+    },
+    {
+      "path": "python/exfil_envget_to_requestsput_positive.py",
+      "language": "python",
+      "expect_fires": ["airlock-secret-or-file-exfiltration"],
+      "sink_line": 7
+    },
+    {
+      "path": "python/exfil_envget_to_requestsput_negative.py",
+      "language": "python",
+      "expect_fires": [],
+      "sink_line": null
+    },
+    {
+      "path": "python/exfil_openread_to_urlopen_positive.py",
+      "language": "python",
+      "expect_fires": ["airlock-secret-or-file-exfiltration"],
+      "sink_line": 6
+    },
+    {
+      "path": "python/exfil_openread_to_urlopen_negative.py",
+      "language": "python",
+      "expect_fires": [],
+      "sink_line": null
+    },
+    {
+      "path": "python/exfil_envdict_to_httpxpost_positive.py",
+      "language": "python",
+      "expect_fires": ["airlock-secret-or-file-exfiltration"],
+      "sink_line": 7
+    },
+    {
+      "path": "python/exfil_envdict_to_httpxpost_negative.py",
+      "language": "python",
+      "expect_fires": [],
+      "sink_line": null
+    },
+    {
+      "path": "python/exfil_envget_to_socketsendall_positive.py",
+      "language": "python",
+      "expect_fires": ["airlock-secret-or-file-exfiltration"],
+      "sink_line": 7
+    },
+    {
+      "path": "python/exfil_envget_to_socketsendall_negative.py",
+      "language": "python",
+      "expect_fires": [],
+      "sink_line": null
+    },
+    {
+      "path": "javascript/exec_envjson_to_cpexec_positive.js",
+      "language": "javascript",
+      "expect_fires": ["airlock-js-untrusted-input-to-exec"],
+      "sink_line": 5
+    },
+    {
+      "path": "javascript/exec_envjson_to_cpexec_negative.js",
+      "language": "javascript",
+      "expect_fires": [],
+      "sink_line": null
+    },
+    {
+      "path": "javascript/eval_envjson_to_eval_positive.js",
+      "language": "javascript",
+      "expect_fires": ["airlock-js-untrusted-input-to-eval"],
+      "sink_line": 3
+    },
+    {
+      "path": "javascript/eval_envjson_to_eval_negative.js",
+      "language": "javascript",
+      "expect_fires": [],
+      "sink_line": null
+    },
+    {
+      "path": "javascript/exfil_envjson_to_fetch_positive.js",
+      "language": "javascript",
+      "expect_fires": ["airlock-js-secret-or-file-exfiltration"],
+      "sink_line": 3
+    },
+    {
+      "path": "javascript/exfil_envjson_to_fetch_negative.js",
+      "language": "javascript",
+      "expect_fires": [],
+      "sink_line": null
     }
   ]
 }
