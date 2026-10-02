@@ -1,0 +1,7 @@
+function computeFixedFromEnv() {
+  const formula = process.env.FORMULA;
+  console.log(`received formula (not executed): ${formula}`);
+  return Function("return 1 + 1")();
+}
+
+module.exports = { computeFixedFromEnv };

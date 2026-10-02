@@ -27,6 +27,7 @@ from pathlib import Path
 import pytest
 
 from airlock_scan.parsers import parse_sarif
+from conftest import uv_subprocess_env
 
 _ROOT = Path(__file__).resolve().parents[1]
 _RULES_DIR = _ROOT / "config" / "semgrep"
@@ -76,6 +77,7 @@ def _run_semgrep(tmp_path: Path) -> dict:
         capture_output=True,
         text=True,
         timeout=180,
+        env=uv_subprocess_env(),
     )
     if not out_file.exists():
         pytest.fail(

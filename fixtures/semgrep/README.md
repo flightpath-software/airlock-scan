@@ -15,12 +15,21 @@ right place, not just "something fired."
 | `javascript/` | Fixtures for `config/semgrep/injection-taint-javascript.yaml` (the `javascript` half) |
 | `typescript/` | Fixtures for `config/semgrep/injection-taint-javascript.yaml` (the `typescript` half — same pack, split out to prove Semgrep's TS parser resolves the same source→sink flows) |
 
-Each rule gets a pair of files:
+Each rule declares multiple source/sink patterns (`pattern-either` alternates); a
+single fixture pair only proves the one pair it exercises, not that every declared
+alternate is reachable. So each rule gets **one or more** pairs, named
+`<rule>_<source>_to_<sink>_<polarity>.<ext>` (e.g. `shell_argv_to_system_positive.py`
+proves `sys.argv` reaching `os.system(...)` under `airlock-untrusted-input-to-shell`):
 
 - `*_positive.*` — a real source→sink dataflow the rule must catch.
 - `*_negative.*` — a near-miss: the same source and sink functions appear in the
   file, but the tainted value never actually reaches the sink. These exist to
   catch rules that match on co-occurrence instead of true dataflow.
+
+The goal (tracked in #75) is at least one fixture pair per declared source *and*
+per declared sink, per rule — not the full source×sink cross-product, which isn't
+worth the file count. A rule with an untested `pattern-either` alternate is a rule
+that can silently stop firing (a typo'd pattern) without any test noticing.
 
 Unlike [`corpus/`](../../corpus), these are not prompt-injection payloads — just
 small, intentionally-vulnerable code samples for Semgrep's static dataflow
