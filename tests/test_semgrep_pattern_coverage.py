@@ -38,10 +38,9 @@ import tempfile
 from pathlib import Path
 
 import pytest
+import yaml
 
 from conftest import uv_subprocess_env
-
-yaml = pytest.importorskip("yaml")
 
 _ROOT = Path(__file__).resolve().parents[1]
 _RULES_DIR = _ROOT / "config" / "semgrep"
@@ -66,15 +65,11 @@ _BARE_FORM_EXCLUDES: dict[str, list[str]] = {
 
 # The keys _collect_patterns turns into probes, and the keys it can skip because they
 # need no fixture of their own: containers, plus constraints/negations that narrow a
-# match rather than add an alternate. Any other pattern-*/metavariable-* key raises.
+# match rather than add an alternate. Any other pattern-*/metavariable-* key raises;
+# keys outside those prefixes (focus-metavariable, taint options like `label`) are
+# never looked at, so they need no entry here.
 _ALTERNATE_KEYS = {"pattern", "pattern-inside"}
-_NON_ALTERNATE_KEYS = {
-    "pattern-either",
-    "patterns",
-    "pattern-not",
-    "pattern-not-inside",
-    "focus-metavariable",
-}
+_NON_ALTERNATE_KEYS = {"pattern-either", "patterns", "pattern-not", "pattern-not-inside"}
 
 
 def _load_labels() -> list[dict]:
@@ -229,9 +224,10 @@ def test_pattern_is_exercised_by_a_fixture(probe_id, coverage_hits):
     )
 
 
-def test_collect_patterns_rejects_alternate_kinds_it_cannot_probe():
-    node = {"pattern-either": [{"pattern": "a(...)"}, {"pattern-regex": "b.*"}]}
-    with pytest.raises(ValueError, match="pattern-regex"):
+@pytest.mark.parametrize("key", ["pattern-regex", "metavariable-regex"])
+def test_collect_patterns_rejects_alternate_kinds_it_cannot_probe(key):
+    node = {"pattern-either": [{"pattern": "a(...)"}, {key: "b.*"}]}
+    with pytest.raises(ValueError, match=key):
         _collect_patterns(node)
 
 
@@ -240,7 +236,7 @@ def test_collect_patterns_ignores_containers_and_constraints():
         "patterns": [
             {"pattern-inside": "x(...)\n"},
             {"pattern-not": "y(...)"},
-            {"focus-metavariable": "$X"},
+            {"pattern-not-inside": "z(...)"},
         ]
     }
     assert _collect_patterns(node) == ["x(...)"]

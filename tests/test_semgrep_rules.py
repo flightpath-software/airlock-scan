@@ -1,7 +1,8 @@
 """Structural validation of the bundled Semgrep taint rule pack.
 
 We can't run Semgrep here (offline), but we can assert the rule files are
-well-formed taint rules with the fields airlock relies on. Skipped without PyYAML.
+well-formed taint rules with the fields airlock relies on. PyYAML is a declared dev
+dependency, so a missing install fails loudly instead of quietly skipping these checks.
 """
 
 from __future__ import annotations
@@ -9,8 +10,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
-yaml = pytest.importorskip("yaml")
+import yaml
 
 _RULES_DIR = Path(__file__).resolve().parents[1] / "config" / "semgrep"
 _RULE_FILES = sorted(_RULES_DIR.glob("*.yaml"))
