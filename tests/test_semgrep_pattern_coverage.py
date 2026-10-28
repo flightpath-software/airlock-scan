@@ -26,32 +26,25 @@ This is necessarily a coverage proxy, not a taint-flow proof:
 - Alternate kinds it can't turn into a probe (e.g. `pattern-regex`) raise instead of
   being skipped, so a new kind can't slip past the audit unchecked.
 
-Skips cleanly when `uvx` isn't on PATH, mirroring test_semgrep_taint_live.py.
+The live audit skips cleanly when `uvx` isn't on PATH, like test_semgrep_taint_live.py;
+the `_collect_patterns` unit tests at the bottom are pure Python and always run.
 """
 
 from __future__ import annotations
 
-import json
-import shutil
-import subprocess
-import tempfile
-from pathlib import Path
-
 import pytest
 import yaml
 
-from conftest import uv_subprocess_env
-
-_ROOT = Path(__file__).resolve().parents[1]
-_RULES_DIR = _ROOT / "config" / "semgrep"
-_FIXTURES_DIR = _ROOT / "fixtures" / "semgrep"
-_LABELS_FILE = _FIXTURES_DIR / "labels.json"
-_RULE_FILES = sorted(_RULES_DIR.glob("*.yaml"))
-
-pytestmark = pytest.mark.skipif(
-    shutil.which("uvx") is None,
-    reason="uvx not on PATH; skipping live Semgrep pattern-coverage audit",
+from _semgrep_support import (
+    RULES_DIR,
+    load_labels,
+    matches_path,
+    requires_uvx,
+    run_semgrep_over_fixtures,
 )
+from airlock_scan.parsers import parse_sarif
+
+_RULE_FILES = sorted(RULES_DIR.glob("*.yaml"))
 
 # A pattern that is a textual prefix/substring of a more specific sibling alternate
 # in the same pattern-either would be spuriously "covered" by any fixture that
@@ -72,13 +65,9 @@ _ALTERNATE_KEYS = {"pattern", "pattern-inside"}
 _NON_ALTERNATE_KEYS = {"pattern-either", "patterns", "pattern-not", "pattern-not-inside"}
 
 
-def _load_labels() -> list[dict]:
-    return json.loads(_LABELS_FILE.read_text(encoding="utf-8"))["items"]
-
-
 def _positive_paths_by_rule() -> dict[str, set[str]]:
     positives: dict[str, set[str]] = {}
-    for item in _load_labels():
+    for item in load_labels():
         for rule_id in item["expect_fires"]:
             positives.setdefault(rule_id, set()).add(item["path"])
     return positives
@@ -155,66 +144,26 @@ def _build_probes() -> tuple[list[dict], dict[str, tuple[str, str, str]]]:
 _PROBES, _META = _build_probes()
 
 
-def _run_probes(tmp_path: Path) -> dict:
-    cfg_file = tmp_path / "probes.yaml"
-    out_file = tmp_path / "coverage.sarif"
-    cfg_file.write_text(yaml.safe_dump({"rules": _PROBES}), encoding="utf-8")
-    result = subprocess.run(
-        [
-            "uvx",
-            "semgrep",
-            "scan",
-            "--config",
-            str(cfg_file),
-            "--sarif",
-            "--output",
-            str(out_file),
-            "--quiet",
-            "--disable-version-check",
-            # Same rationale as test_semgrep_taint_live.py: don't let git-index
-            # state or rule-id rewriting affect which probes appear to match.
-            "--no-git-ignore",
-            "--no-rewrite-rule-ids",
-            str(_FIXTURES_DIR),
-        ],
-        capture_output=True,
-        text=True,
-        timeout=180,
-        env=uv_subprocess_env(),
-    )
-    if not out_file.exists():
-        pytest.fail(
-            f"semgrep produced no SARIF output (exit {result.returncode}):\n"
-            f"stdout: {result.stdout}\nstderr: {result.stderr}"
-        )
-    return json.loads(out_file.read_text(encoding="utf-8"))
-
-
-def _matches_path(uri: str, rel_path: str) -> bool:
-    uri = uri.replace("\\", "/")
-    return uri == rel_path or uri.endswith("/" + rel_path)
-
-
 @pytest.fixture(scope="module")
-def coverage_hits() -> dict[str, bool]:
+def coverage_hits(tmp_path_factory) -> dict[str, bool]:
     """One live semgrep run (module-scoped) covering every declared pattern as its own probe."""
-    with tempfile.TemporaryDirectory() as tmp:
-        sarif = _run_probes(Path(tmp))
+    tmp = tmp_path_factory.mktemp("semgrep-coverage")
+    probes_file = tmp / "probes.yaml"
+    probes_file.write_text(yaml.safe_dump({"rules": _PROBES}), encoding="utf-8")
+    sarif = run_semgrep_over_fixtures(probes_file, tmp / "coverage.sarif")
     positives = _positive_paths_by_rule()
 
     hits: dict[str, bool] = dict.fromkeys(_META, False)
-    for run in sarif["runs"]:
-        for result in run["results"]:
-            probe_id = result["ruleId"]
-            if probe_id not in _META:
-                continue
-            rule_id, _role, _pattern = _META[probe_id]
-            uri = result["locations"][0]["physicalLocation"]["artifactLocation"]["uri"]
-            if any(_matches_path(uri, path) for path in positives.get(rule_id, set())):
-                hits[probe_id] = True
+    for finding in parse_sarif(sarif, tool="semgrep"):
+        if finding.rule_id not in _META or not finding.file:
+            continue
+        rule_id = _META[finding.rule_id][0]
+        if any(matches_path(finding.file, path) for path in positives.get(rule_id, set())):
+            hits[finding.rule_id] = True
     return hits
 
 
+@requires_uvx
 @pytest.mark.parametrize("probe_id", list(_META), ids=list(_META))
 def test_pattern_is_exercised_by_a_fixture(probe_id, coverage_hits):
     rule_id, role, pattern = _META[probe_id]
