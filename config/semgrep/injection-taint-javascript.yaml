@@ -26,11 +26,9 @@ rules:
       # the callback body (even an unused sink in an unrelated branch), since the
       # `...` wildcard matches the callback literal itself. Binding to just the
       # data parameter makes this real dataflow instead of lexical containment.
-      # Anchored (&fs-readfile-callback-data) since all three rules below share
-      # this identical fs.readFile source shape - see the *fs-readfile-callback-data
-      # aliases.
-      - &fs-readfile-callback-data
-        patterns:
+      # This block is repeated verbatim in each rule on purpose: `semgrep --validate`
+      # rejects YAML anchors/aliases, so it can't be factored out (a test enforces it).
+      - patterns:
           - pattern-either:
               - pattern-inside: |
                   fs.readFile(..., ($ERR, $DATA) => {...})
@@ -65,7 +63,13 @@ rules:
           - pattern: process.env.$X
           - pattern: process.argv
           - pattern: fs.readFileSync(...)
-      - *fs-readfile-callback-data
+      - patterns:
+          - pattern-either:
+              - pattern-inside: |
+                  fs.readFile(..., ($ERR, $DATA) => {...})
+              - pattern-inside: |
+                  fs.readFile(..., function ($ERR, $DATA) {...})
+          - focus-metavariable: $DATA
     pattern-sinks:
       - patterns:
           - pattern-either:
@@ -89,7 +93,13 @@ rules:
           - pattern: process.env
           - pattern: process.env.$X
           - pattern: fs.readFileSync(...)
-      - *fs-readfile-callback-data
+      - patterns:
+          - pattern-either:
+              - pattern-inside: |
+                  fs.readFile(..., ($ERR, $DATA) => {...})
+              - pattern-inside: |
+                  fs.readFile(..., function ($ERR, $DATA) {...})
+          - focus-metavariable: $DATA
     pattern-sinks:
       - patterns:
           - pattern-either:

@@ -37,3 +37,20 @@ def test_rules_are_well_formed_taint_rules(path):
         assert rule["pattern-sources"]
         assert rule["pattern-sinks"]
         assert rule.get("metadata", {}).get("airlock") == "taint"
+
+
+@pytest.mark.parametrize("path", _RULE_FILES, ids=lambda p: p.name)
+def test_rule_files_use_no_yaml_aliases(path):
+    # `semgrep --validate` rejects YAML anchors/aliases in a rule file, while
+    # `semgrep scan` and PyYAML both resolve them - so an aliased pack passes every
+    # other test here and still fails Semgrep's own validator. Repeat shared blocks
+    # instead. (yaml.compose can't see this: it expands aliases; the token stream can.)
+    used = [
+        token
+        for token in yaml.scan(path.read_text(encoding="utf-8"))
+        if isinstance(token, (yaml.AnchorToken, yaml.AliasToken))
+    ]
+    assert not used, (
+        f"{path.name}:{used[0].start_mark.line + 1} uses a YAML anchor/alias, which "
+        "`semgrep --validate` rejects - inline the shared block instead."
+    )
