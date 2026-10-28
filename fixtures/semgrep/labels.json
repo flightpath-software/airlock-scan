@@ -3,49 +3,49 @@
   "description": "Ground truth for the taint-pack fixtures; schema in README.md.",
   "items": [
     {
-      "path": "python/shell_environget_to_run_positive.py",
+      "path": "python/shell_environget_to_subprocessrun_positive.py",
       "language": "python",
       "expect_fires": ["airlock-untrusted-input-to-shell"],
       "sink_line": 7
     },
     {
-      "path": "python/shell_environget_to_run_negative.py",
+      "path": "python/shell_environget_to_subprocessrun_negative.py",
       "language": "python",
       "expect_fires": [],
       "sink_line": null
     },
     {
-      "path": "python/shell_argv_to_system_positive.py",
+      "path": "python/shell_argv_to_ossystem_positive.py",
       "language": "python",
       "expect_fires": ["airlock-untrusted-input-to-shell"],
       "sink_line": 7
     },
     {
-      "path": "python/shell_argv_to_system_negative.py",
+      "path": "python/shell_argv_to_ossystem_negative.py",
       "language": "python",
       "expect_fires": [],
       "sink_line": null
     },
     {
-      "path": "python/shell_getenv_to_popen_positive.py",
+      "path": "python/shell_getenv_to_ospopen_positive.py",
       "language": "python",
       "expect_fires": ["airlock-untrusted-input-to-shell"],
       "sink_line": 6
     },
     {
-      "path": "python/shell_getenv_to_popen_negative.py",
+      "path": "python/shell_getenv_to_ospopen_negative.py",
       "language": "python",
       "expect_fires": [],
       "sink_line": null
     },
     {
-      "path": "python/shell_input_to_call_positive.py",
+      "path": "python/shell_input_to_subprocesscall_positive.py",
       "language": "python",
       "expect_fires": ["airlock-untrusted-input-to-shell"],
       "sink_line": 6
     },
     {
-      "path": "python/shell_input_to_call_negative.py",
+      "path": "python/shell_input_to_subprocesscall_negative.py",
       "language": "python",
       "expect_fires": [],
       "sink_line": null
@@ -87,25 +87,25 @@
       "sink_line": null
     },
     {
-      "path": "python/exfil_getenv_to_post_positive.py",
+      "path": "python/exfil_getenv_to_requestspost_positive.py",
       "language": "python",
       "expect_fires": ["airlock-secret-or-file-exfiltration"],
       "sink_line": 7
     },
     {
-      "path": "python/exfil_getenv_to_post_negative.py",
+      "path": "python/exfil_getenv_to_requestspost_negative.py",
       "language": "python",
       "expect_fires": [],
       "sink_line": null
     },
     {
-      "path": "python/exfil_envsubscript_to_httpxget_positive.py",
+      "path": "python/exfil_environsubscript_to_httpxget_positive.py",
       "language": "python",
       "expect_fires": ["airlock-secret-or-file-exfiltration"],
       "sink_line": 7
     },
     {
-      "path": "python/exfil_envsubscript_to_httpxget_negative.py",
+      "path": "python/exfil_environsubscript_to_httpxget_negative.py",
       "language": "python",
       "expect_fires": [],
       "sink_line": null
@@ -147,13 +147,13 @@
       "sink_line": null
     },
     {
-      "path": "javascript/eval_env_to_function_positive.js",
+      "path": "javascript/eval_envfield_to_function_positive.js",
       "language": "javascript",
       "expect_fires": ["airlock-js-untrusted-input-to-eval"],
       "sink_line": 3
     },
     {
-      "path": "javascript/eval_env_to_function_negative.js",
+      "path": "javascript/eval_envfield_to_function_negative.js",
       "language": "javascript",
       "expect_fires": [],
       "sink_line": null
@@ -231,13 +231,13 @@
       "sink_line": null
     },
     {
-      "path": "javascript/exec_env_to_childprocessexec_positive.js",
+      "path": "javascript/exec_envfield_to_childprocessexec_positive.js",
       "language": "javascript",
       "expect_fires": ["airlock-js-untrusted-input-to-exec"],
       "sink_line": 5
     },
     {
-      "path": "javascript/exec_env_to_childprocessexec_negative.js",
+      "path": "javascript/exec_envfield_to_childprocessexec_negative.js",
       "language": "javascript",
       "expect_fires": [],
       "sink_line": null
@@ -279,13 +279,13 @@
       "sink_line": null
     },
     {
-      "path": "javascript/eval_env_to_newfunction_positive.js",
+      "path": "javascript/eval_envfield_to_newfunction_positive.js",
       "language": "javascript",
       "expect_fires": ["airlock-js-untrusted-input-to-eval"],
       "sink_line": 3
     },
     {
-      "path": "javascript/eval_env_to_newfunction_negative.js",
+      "path": "javascript/eval_envfield_to_newfunction_negative.js",
       "language": "javascript",
       "expect_fires": [],
       "sink_line": null
@@ -339,13 +339,13 @@
       "sink_line": null
     },
     {
-      "path": "javascript/exfil_env_to_axiosget_positive.js",
+      "path": "javascript/exfil_envfield_to_axiosget_positive.js",
       "language": "javascript",
       "expect_fires": ["airlock-js-secret-or-file-exfiltration"],
       "sink_line": 5
     },
     {
-      "path": "javascript/exfil_env_to_axiosget_negative.js",
+      "path": "javascript/exfil_envfield_to_axiosget_negative.js",
       "language": "javascript",
       "expect_fires": [],
       "sink_line": null
@@ -375,37 +375,37 @@
       "sink_line": null
     },
     {
-      "path": "python/shell_envsubscript_to_checkoutput_positive.py",
+      "path": "python/shell_environsubscript_to_subprocesscheckoutput_positive.py",
       "language": "python",
       "expect_fires": ["airlock-untrusted-input-to-shell"],
       "sink_line": 7
     },
     {
-      "path": "python/shell_envsubscript_to_checkoutput_negative.py",
+      "path": "python/shell_environsubscript_to_subprocesscheckoutput_negative.py",
       "language": "python",
       "expect_fires": [],
       "sink_line": null
     },
     {
-      "path": "python/shell_stdin_to_popen_positive.py",
+      "path": "python/shell_stdin_to_subprocesspopen_positive.py",
       "language": "python",
       "expect_fires": ["airlock-untrusted-input-to-shell"],
       "sink_line": 7
     },
     {
-      "path": "python/shell_stdin_to_popen_negative.py",
+      "path": "python/shell_stdin_to_subprocesspopen_negative.py",
       "language": "python",
       "expect_fires": [],
       "sink_line": null
     },
     {
-      "path": "python/shell_openread_to_system_positive.py",
+      "path": "python/shell_openread_to_ossystem_positive.py",
       "language": "python",
       "expect_fires": ["airlock-untrusted-input-to-shell"],
       "sink_line": 6
     },
     {
-      "path": "python/shell_openread_to_system_negative.py",
+      "path": "python/shell_openread_to_ossystem_negative.py",
       "language": "python",
       "expect_fires": [],
       "sink_line": null
@@ -447,37 +447,37 @@
       "sink_line": null
     },
     {
-      "path": "python/eval_envsubscript_to_compile_positive.py",
+      "path": "python/eval_environsubscript_to_compile_positive.py",
       "language": "python",
       "expect_fires": ["airlock-untrusted-input-to-eval"],
       "sink_line": 6
     },
     {
-      "path": "python/eval_envsubscript_to_compile_negative.py",
+      "path": "python/eval_environsubscript_to_compile_negative.py",
       "language": "python",
       "expect_fires": [],
       "sink_line": null
     },
     {
-      "path": "python/exfil_envdict_to_requestsget_positive.py",
+      "path": "python/exfil_environ_to_requestsget_positive.py",
       "language": "python",
       "expect_fires": ["airlock-secret-or-file-exfiltration"],
       "sink_line": 7
     },
     {
-      "path": "python/exfil_envdict_to_requestsget_negative.py",
+      "path": "python/exfil_environ_to_requestsget_negative.py",
       "language": "python",
       "expect_fires": [],
       "sink_line": null
     },
     {
-      "path": "python/exfil_envget_to_requestsput_positive.py",
+      "path": "python/exfil_environget_to_requestsput_positive.py",
       "language": "python",
       "expect_fires": ["airlock-secret-or-file-exfiltration"],
       "sink_line": 7
     },
     {
-      "path": "python/exfil_envget_to_requestsput_negative.py",
+      "path": "python/exfil_environget_to_requestsput_negative.py",
       "language": "python",
       "expect_fires": [],
       "sink_line": null
@@ -495,61 +495,61 @@
       "sink_line": null
     },
     {
-      "path": "python/exfil_envdict_to_httpxpost_positive.py",
+      "path": "python/exfil_environ_to_httpxpost_positive.py",
       "language": "python",
       "expect_fires": ["airlock-secret-or-file-exfiltration"],
       "sink_line": 7
     },
     {
-      "path": "python/exfil_envdict_to_httpxpost_negative.py",
+      "path": "python/exfil_environ_to_httpxpost_negative.py",
       "language": "python",
       "expect_fires": [],
       "sink_line": null
     },
     {
-      "path": "python/exfil_envget_to_socketsendall_positive.py",
+      "path": "python/exfil_environget_to_socketsendall_positive.py",
       "language": "python",
       "expect_fires": ["airlock-secret-or-file-exfiltration"],
       "sink_line": 7
     },
     {
-      "path": "python/exfil_envget_to_socketsendall_negative.py",
+      "path": "python/exfil_environget_to_socketsendall_negative.py",
       "language": "python",
       "expect_fires": [],
       "sink_line": null
     },
     {
-      "path": "javascript/exec_envjson_to_cpexec_positive.js",
+      "path": "javascript/exec_env_to_cpexec_positive.js",
       "language": "javascript",
       "expect_fires": ["airlock-js-untrusted-input-to-exec"],
       "sink_line": 5
     },
     {
-      "path": "javascript/exec_envjson_to_cpexec_negative.js",
+      "path": "javascript/exec_env_to_cpexec_negative.js",
       "language": "javascript",
       "expect_fires": [],
       "sink_line": null
     },
     {
-      "path": "javascript/eval_envjson_to_eval_positive.js",
+      "path": "javascript/eval_env_to_eval_positive.js",
       "language": "javascript",
       "expect_fires": ["airlock-js-untrusted-input-to-eval"],
       "sink_line": 3
     },
     {
-      "path": "javascript/eval_envjson_to_eval_negative.js",
+      "path": "javascript/eval_env_to_eval_negative.js",
       "language": "javascript",
       "expect_fires": [],
       "sink_line": null
     },
     {
-      "path": "javascript/exfil_envjson_to_fetch_positive.js",
+      "path": "javascript/exfil_env_to_fetch_positive.js",
       "language": "javascript",
       "expect_fires": ["airlock-js-secret-or-file-exfiltration"],
       "sink_line": 3
     },
     {
-      "path": "javascript/exfil_envjson_to_fetch_negative.js",
+      "path": "javascript/exfil_env_to_fetch_negative.js",
       "language": "javascript",
       "expect_fires": [],
       "sink_line": null
