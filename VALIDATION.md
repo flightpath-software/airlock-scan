@@ -59,5 +59,7 @@ uvx pip-audit -r <(uv export --frozen --format requirements-txt --no-emit-projec
 | No secrets in the diff / history | `gitleaks` (`gitleaks.yml`) |
 | Static analysis on every PR | CodeQL (`codeql.yml`) |
 | The bundled Semgrep taint rules are well-formed | `tests/test_semgrep_rules.py::test_rules_are_well_formed_taint_rules` |
+| The bundled Semgrep rule files use no YAML anchors/aliases (`semgrep --validate` rejects them) | `tests/test_semgrep_rules.py::test_rule_files_use_no_yaml_aliases` |
 | The bundled taint pack fires on labeled source→sink fixtures with 0 FN | `tests/test_semgrep_taint_live.py::test_fixture_matches_expected_findings` |
+| Every source and sink pattern the bundled taint rules declare is exercised by a labeled fixture | `tests/test_semgrep_pattern_coverage.py::test_pattern_is_exercised_by_a_fixture` |
 | The packaged harness-signature dataset matches its YAML source | `tests/test_harness_dataset_sync.py::test_packaged_json_matches_yaml` |
