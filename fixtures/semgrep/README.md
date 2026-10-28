@@ -26,10 +26,12 @@ proves `sys.argv` reaching `os.system(...)` under `airlock-untrusted-input-to-sh
   file, but the tainted value never actually reaches the sink. These exist to
   catch rules that match on co-occurrence instead of true dataflow.
 
-The goal (tracked in #75) is at least one fixture pair per declared source *and*
-per declared sink, per rule — not the full source×sink cross-product, which isn't
-worth the file count. A rule with an untested `pattern-either` alternate is a rule
-that can silently stop firing (a typo'd pattern) without any test noticing.
+Every declared source *and* sink pattern needs at least one fixture pair, per rule —
+not the full source×sink cross-product, which isn't worth the file count. A rule with
+an untested `pattern-either` alternate is a rule that can silently stop firing (a
+typo'd pattern) without any test noticing, so `tests/test_semgrep_pattern_coverage.py`
+fails when a pattern in `config/semgrep/*.yaml` has no positive fixture for its own
+rule (#75). Adding a pattern to a rule means adding its fixtures here.
 
 Unlike [`corpus/`](../../corpus), these are not prompt-injection payloads — just
 small, intentionally-vulnerable code samples for Semgrep's static dataflow

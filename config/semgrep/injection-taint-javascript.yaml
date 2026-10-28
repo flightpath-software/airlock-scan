@@ -26,8 +26,10 @@ rules:
       # the callback body (even an unused sink in an unrelated branch), since the
       # `...` wildcard matches the callback literal itself. Binding to just the
       # data parameter makes this real dataflow instead of lexical containment.
-      # This block is repeated verbatim in each rule on purpose: `semgrep --validate`
-      # rejects YAML anchors/aliases, so it can't be factored out (a test enforces it).
+      # This block is repeated in each rule on purpose - keep the copies identical.
+      # `semgrep --validate` rejects a YAML alias used as a list item under
+      # pattern-sources or pattern-sinks, so it can't be factored out with an anchor
+      # (test_rule_files_use_no_yaml_aliases bans anchors/aliases in rule files outright).
       - patterns:
           - pattern-either:
               - pattern-inside: |
