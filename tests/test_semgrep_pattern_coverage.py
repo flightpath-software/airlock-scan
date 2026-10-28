@@ -23,6 +23,8 @@ This is necessarily a coverage proxy, not a taint-flow proof:
   for the lexical-containment false positive) are treated the same as `pattern`
   alternates for this audit: both describe a code shape that should appear in some
   fixture, they just play different roles in the real taint-mode rule.
+- Alternate kinds it can't turn into a probe (e.g. `pattern-regex`) raise instead of
+  being skipped, so a new kind can't slip past the audit unchecked.
 
 Skips cleanly when `uvx` isn't on PATH, mirroring test_semgrep_taint_live.py.
 """
@@ -62,6 +64,18 @@ _BARE_FORM_EXCLUDES: dict[str, list[str]] = {
     "os.environ": ["os.environ[...]", "os.environ.get(...)"],
 }
 
+# The keys _collect_patterns turns into probes, and the keys it can skip because they
+# need no fixture of their own: containers, plus constraints/negations that narrow a
+# match rather than add an alternate. Any other pattern-*/metavariable-* key raises.
+_ALTERNATE_KEYS = {"pattern", "pattern-inside"}
+_NON_ALTERNATE_KEYS = {
+    "pattern-either",
+    "patterns",
+    "pattern-not",
+    "pattern-not-inside",
+    "focus-metavariable",
+}
+
 
 def _load_labels() -> list[dict]:
     return json.loads(_LABELS_FILE.read_text(encoding="utf-8"))["items"]
@@ -76,18 +90,30 @@ def _positive_paths_by_rule() -> dict[str, set[str]]:
 
 
 def _collect_patterns(node) -> list[str]:
-    """Walk a pattern-sources/pattern-sinks subtree, returning every pattern/pattern-inside string."""
+    """Walk a pattern-sources/pattern-sinks subtree, returning every pattern/pattern-inside string.
+
+    Raises on any other pattern-*/metavariable-* key (e.g. pattern-regex): the audit
+    can't turn it into a probe, and skipping it quietly would let an alternate ship
+    without a fixture - the exact gap this test exists to close.
+    """
     found: list[str] = []
     if isinstance(node, dict):
-        for key in ("pattern", "pattern-inside"):
-            value = node.get(key)
-            if isinstance(value, str):
+        for key, value in node.items():
+            if key in _ALTERNATE_KEYS and isinstance(value, str):
                 # YAML block-literal (`|`) values for pattern-inside carry a
                 # trailing newline; strip it so probe text and error messages
                 # match what a `pattern:` alternate would look like.
                 found.append(value.strip())
-        for key, value in node.items():
-            if key not in ("pattern", "pattern-inside"):
+            elif key.startswith(("pattern", "metavariable")) and key not in (
+                _ALTERNATE_KEYS | _NON_ALTERNATE_KEYS
+            ):
+                raise ValueError(
+                    f"unhandled alternate kind {key!r} in config/semgrep: the coverage audit "
+                    "can't turn it into a probe, so it would go unchecked. Teach "
+                    "_collect_patterns to handle it, or add it to _NON_ALTERNATE_KEYS if it "
+                    "needs no fixture of its own."
+                )
+            else:
                 found.extend(_collect_patterns(value))
     elif isinstance(node, list):
         for child in node:
@@ -201,3 +227,20 @@ def test_pattern_is_exercised_by_a_fixture(probe_id, coverage_hits):
         f"{rule_id} {role} {pattern!r} is not exercised by any positive fixture "
         f"labeled for {rule_id} in fixtures/semgrep/labels.json - add one."
     )
+
+
+def test_collect_patterns_rejects_alternate_kinds_it_cannot_probe():
+    node = {"pattern-either": [{"pattern": "a(...)"}, {"pattern-regex": "b.*"}]}
+    with pytest.raises(ValueError, match="pattern-regex"):
+        _collect_patterns(node)
+
+
+def test_collect_patterns_ignores_containers_and_constraints():
+    node = {
+        "patterns": [
+            {"pattern-inside": "x(...)\n"},
+            {"pattern-not": "y(...)"},
+            {"focus-metavariable": "$X"},
+        ]
+    }
+    assert _collect_patterns(node) == ["x(...)"]
