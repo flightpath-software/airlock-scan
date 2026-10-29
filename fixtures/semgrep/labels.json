@@ -553,6 +553,18 @@
       "language": "javascript",
       "expect_fires": [],
       "sink_line": null
+    },
+    {
+      "path": "typescript/exfil_readfilearrow_to_httpsrequest_positive.ts",
+      "language": "typescript",
+      "expect_fires": ["airlock-js-secret-or-file-exfiltration"],
+      "sink_line": 6
+    },
+    {
+      "path": "typescript/exfil_readfilearrow_to_httpsrequest_negative.ts",
+      "language": "typescript",
+      "expect_fires": [],
+      "sink_line": null
     }
   ]
 }
