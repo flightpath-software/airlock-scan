@@ -32,6 +32,8 @@ the `_collect_patterns` unit tests at the bottom are pure Python and always run.
 
 from __future__ import annotations
 
+from typing import NamedTuple
+
 import pytest
 import yaml
 
@@ -63,6 +65,14 @@ _BARE_FORM_EXCLUDES: dict[str, list[str]] = {
 # never looked at, so they need no entry here.
 _ALTERNATE_KEYS = {"pattern", "pattern-inside"}
 _NON_ALTERNATE_KEYS = {"pattern-either", "patterns", "pattern-not", "pattern-not-inside"}
+
+
+class Probe(NamedTuple):
+    """What one probe rule stands for: a pattern a real rule declares as a source or sink."""
+
+    rule_id: str
+    role: str  # "source" or "sink"
+    pattern: str
 
 
 def _positive_paths_by_rule() -> dict[str, set[str]]:
@@ -105,12 +115,12 @@ def _collect_patterns(node) -> list[str]:
     return found
 
 
-def _build_probes() -> tuple[list[dict], dict[str, tuple[str, str, str]]]:
+def _build_probes() -> tuple[list[dict], dict[str, Probe]]:
     """One search-mode probe rule per declared alternate.
 
-    Returns (probe_rules, meta), where meta maps probe id -> (rule_id, role, pattern).
+    Returns (probe_rules, meta), where meta maps probe id -> the Probe it stands for.
     """
-    meta: dict[str, tuple[str, str, str]] = {}
+    meta: dict[str, Probe] = {}
     probes: list[dict] = []
     for rules_file in _RULE_FILES:
         doc = yaml.safe_load(rules_file.read_text(encoding="utf-8"))
@@ -118,7 +128,7 @@ def _build_probes() -> tuple[list[dict], dict[str, tuple[str, str, str]]]:
             for role, key in (("source", "pattern-sources"), ("sink", "pattern-sinks")):
                 for pattern in _collect_patterns(rule[key]):
                     probe_id = f"cov-{len(meta)}"
-                    meta[probe_id] = (rule["id"], role, pattern)
+                    meta[probe_id] = Probe(rule["id"], role, pattern)
                     excludes = _BARE_FORM_EXCLUDES.get(pattern)
                     if excludes:
                         probe = {
@@ -155,10 +165,10 @@ def coverage_hits(tmp_path_factory) -> dict[str, bool]:
 
     hits: dict[str, bool] = dict.fromkeys(_META, False)
     for finding in parse_sarif(sarif, tool="semgrep"):
-        if finding.rule_id not in _META or not finding.file:
+        probe = _META.get(finding.rule_id)
+        if probe is None or not finding.file:
             continue
-        rule_id = _META[finding.rule_id][0]
-        if any(matches_path(finding.file, path) for path in positives.get(rule_id, set())):
+        if any(matches_path(finding.file, p) for p in positives.get(probe.rule_id, set())):
             hits[finding.rule_id] = True
     return hits
 
@@ -166,10 +176,10 @@ def coverage_hits(tmp_path_factory) -> dict[str, bool]:
 @requires_uvx
 @pytest.mark.parametrize("probe_id", list(_META), ids=list(_META))
 def test_pattern_is_exercised_by_a_fixture(probe_id, coverage_hits):
-    rule_id, role, pattern = _META[probe_id]
+    probe = _META[probe_id]
     assert coverage_hits[probe_id], (
-        f"{rule_id} {role} {pattern!r} is not exercised by any positive fixture "
-        f"labeled for {rule_id} in fixtures/semgrep/labels.json - add one."
+        f"{probe.rule_id} {probe.role} {probe.pattern!r} is not exercised by any positive "
+        f"fixture labeled for {probe.rule_id} in fixtures/semgrep/labels.json - add one."
     )
 
 
